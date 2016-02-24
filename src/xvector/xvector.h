@@ -69,6 +69,7 @@ namespace kaldi {
     CuMatrixBase<BaseFloat> *deriv_xvector,
     CuVector<BaseFloat> *deriv_S,
     BaseFloat *deriv_b,
+    CuMatrixBase<BaseFloat> *raw_scores,
     BaseFloat *tot_objf,
     BaseFloat *tot_weight);
 }  // namespace kaldi

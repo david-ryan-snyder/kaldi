@@ -130,6 +130,7 @@ void NnetXvectorTrainer::ProcessOutputs(NnetComputer *computer) {
                                    (supply_deriv ? &xvector_deriv : NULL),
                                    (supply_deriv ? &deriv_s : NULL),
                                    (supply_deriv ? &deriv_b : NULL),
+                                   NULL,
                                    &tot_objf,
                                    &tot_weight);
 
@@ -269,7 +270,7 @@ void GetComputationRequestXvector(const Nnet &nnet,
   // We only need the output on frame t=0 for each n.
   int32 io_index_size = request->inputs[0].indexes.size(),
          n_indx_size = 0;
-  std::vector<Index> output_indexes, 
+  std::vector<Index> output_indexes,
     affine_output_indexes;
   affine_output_indexes.resize(1);
   affine_output_indexes[0].n = 0;
@@ -284,7 +285,7 @@ void GetComputationRequestXvector(const Nnet &nnet,
     output_indexes[indx].n = indx;
     output_indexes[indx].t = 0;
   }
-  
+
   // In order to generate computation request for output nodes,
   // we should find output nodes and add io_spec for each one.
   int32 num_nodes = nnet.NumNodes();
@@ -294,8 +295,8 @@ void GetComputationRequestXvector(const Nnet &nnet,
       dest.resize(dest.size() + 1);
       IoSpecification &io_spec = dest.back();
       io_spec.name = nnet.GetNodeName(node_index);
-      if (nnet.GetNodeName(node_index) == "s" || 
-          nnet.GetNodeName(node_index) == "b") 
+      if (nnet.GetNodeName(node_index) == "s" ||
+          nnet.GetNodeName(node_index) == "b")
         io_spec.indexes = affine_output_indexes;
       else
         io_spec.indexes = output_indexes;

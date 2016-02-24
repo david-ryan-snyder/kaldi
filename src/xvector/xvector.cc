@@ -26,6 +26,7 @@ void ComputeXvectorObjfAndDeriv(
     const CuSpMatrix<BaseFloat> &S,
     BaseFloat b, CuMatrixBase<BaseFloat> *deriv_xvector,
     CuVector<BaseFloat> *deriv_S, BaseFloat *deriv_b,
+    CuMatrixBase<BaseFloat> *raw_scores,
     BaseFloat *tot_objf,
     BaseFloat *tot_weight) {
 
@@ -61,6 +62,8 @@ void ComputeXvectorObjfAndDeriv(
   scores.AddMat(-1.0, R, kTrans);
   scores.AddMat(-1.0, R, kNoTrans);
   scores.Add(b);
+  if (raw_scores != NULL)
+    raw_scores->CopyFromMat(scores);
 
   cu::ComputeXvectorObjfFromScores(scores, &objf_terms, &objf_deriv_terms);
   CuVector<BaseFloat> objf_terms_vec(N);

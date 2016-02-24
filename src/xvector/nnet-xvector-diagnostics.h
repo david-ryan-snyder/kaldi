@@ -71,6 +71,11 @@ class NnetXvectorComputeProb {
   ~NnetXvectorComputeProb();
  private:
   void ProcessOutputs(NnetComputer *computer);
+  BaseFloat ComputeEer(std::vector<BaseFloat> *target_scores,
+                     std::vector<BaseFloat> *nontarget_scores);
+  void ComputeAccuracy(const CuMatrixBase<BaseFloat> &raw_scores,
+                       BaseFloat *tot_weight_out,
+                       BaseFloat *tot_accuracy_out);
 
   NnetComputeProbOptions config_;
   const Nnet &nnet_;
@@ -80,11 +85,11 @@ class NnetXvectorComputeProb {
 
   // this is only for diagnostics.
   int32 num_minibatches_processed_;
-
+  bool need_eer_threshold_;
+  BaseFloat eer_threshold_;
   unordered_map<std::string, SimpleObjectiveInfo, StringHasher> objf_info_;
-
+  unordered_map<std::string, SimpleObjectiveInfo, StringHasher> acc_info_;
 };
-
 
 } // namespace nnet3
 } // namespace kaldi

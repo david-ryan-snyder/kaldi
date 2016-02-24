@@ -36,6 +36,10 @@ NnetXvectorComputeProb::NnetXvectorComputeProb(const NnetComputeProbOptions &con
     bool is_gradient = true;  // force simple update
     SetZero(is_gradient, deriv_nnet_);
   }
+  if (config_.compute_accuracy)
+    need_eer_threshold_ = true;
+  else
+    need_eer_threshold_ = false;
 }
 
 const Nnet &NnetXvectorComputeProb::GetDeriv() const {
@@ -51,6 +55,7 @@ NnetXvectorComputeProb::~NnetXvectorComputeProb() {
 void NnetXvectorComputeProb::Reset() {
   num_minibatches_processed_ = 0;
   objf_info_.clear();
+  acc_info_.clear();
   if (deriv_nnet_) {
     bool is_gradient = true;
     SetZero(is_gradient, deriv_nnet_);
@@ -80,46 +85,66 @@ void NnetXvectorComputeProb::ProcessOutputs(NnetComputer *computer) {
     if (nnet_.IsOutputNode(node_index)) {
       std::string xvector_name = nnet_.GetNodeName(node_index),
         s_name = "s", b_name = "b";
-      if (nnet_.GetNodeIndex(s_name) == -1 || nnet_.GetNodeIndex(b_name) == -1)
-        KALDI_ERR << "The nnet expected to have two output nodes with name s and b.";
+      if (nnet_.GetNodeIndex(s_name) == -1
+          || nnet_.GetNodeIndex(b_name) == -1)
+        KALDI_ERR << "Expected the nnet to have two output nodes with name "
+                  << "s and b.";
 
       if (xvector_name != s_name && xvector_name != b_name) {
-        const CuMatrixBase<BaseFloat> &xvector_pairs = computer->GetOutput(xvector_name),
-          &xvec_s = computer->GetOutput(s_name),
-          &xvec_b = computer->GetOutput(b_name);
-        CuMatrix<BaseFloat> xvector_deriv(xvector_pairs.NumRows(), xvector_pairs.NumCols(),
-                                          kUndefined);
-        int32 s_dim = xvector_pairs.NumCols() * (xvector_pairs.NumCols() + 1) / 2;
+        const CuMatrixBase<BaseFloat> &xvector_pairs = computer->GetOutput(
+                                                       xvector_name),
+                                      &xvec_s = computer->GetOutput(
+                                                s_name),
+                                      &xvec_b = computer->GetOutput(
+                                                b_name);
+        int32 num_rows = xvector_pairs.NumRows(),
+              dim_xvector = xvector_pairs.NumCols();
+        int32 s_dim = dim_xvector * (dim_xvector + 1) / 2;
+
+        CuMatrix<BaseFloat> xvector_deriv(num_rows,
+                                          dim_xvector,
+                                          kUndefined),
+                            raw_scores(num_rows, num_rows);
 
         // convert CuVector to CuSpMatrix
-        CuSpMatrix<BaseFloat> xvec_s_sp(xvector_pairs.NumCols());
+        CuSpMatrix<BaseFloat> xvec_s_sp(dim_xvector);
         xvec_s_sp.CopyFromVec(xvec_s.Row(0));
 
         CuVector<BaseFloat> deriv_s(s_dim);
         BaseFloat xvec_b_val = xvec_b(0,0), deriv_b;
         BaseFloat tot_weight, tot_objf;
         bool supply_deriv = config_.compute_deriv;
+        bool compute_accuracy = config_.compute_accuracy;
         ComputeXvectorObjfAndDeriv(xvector_pairs, xvec_s_sp, xvec_b_val,
                                    (supply_deriv ? &xvector_deriv : NULL),
                                    (supply_deriv ? &deriv_s : NULL),
                                    (supply_deriv ? &deriv_b : NULL),
+                                   (compute_accuracy ? &raw_scores : NULL),
                                    &tot_objf,
                                    &tot_weight);
         if (supply_deriv) {
           CuMatrix<BaseFloat> deriv_s_mat(1, s_dim),
-            deriv_b_mat(1,1);
+                              deriv_b_mat(1,1);
           deriv_b_mat(0,0) = deriv_b;
           deriv_s_mat.CopyRowsFromVec(deriv_s);
           computer->AcceptOutputDeriv(xvector_name, &xvector_deriv);
           computer->AcceptOutputDeriv(s_name, &deriv_s_mat);
           computer->AcceptOutputDeriv(b_name, &deriv_b_mat);
-
         }
+
         SimpleObjectiveInfo &totals = objf_info_[xvector_name];
         totals.tot_weight += tot_weight;
         totals.tot_objective += tot_objf;
+
+        if (compute_accuracy) {
+          BaseFloat tot_acc, tot_weight_acc;
+          SimpleObjectiveInfo &acc_totals = acc_info_[xvector_name];
+          ComputeAccuracy(raw_scores, &tot_weight_acc, &tot_acc);
+          acc_totals.tot_objective += tot_weight_acc * tot_acc;
+          acc_totals.tot_weight += tot_weight_acc;
+        }
+        num_minibatches_processed_++;
       }
-      num_minibatches_processed_++;
     }
   }
 }
@@ -140,13 +165,67 @@ bool NnetXvectorComputeProb::PrintTotalStats() const {
       KALDI_LOG << "Overall "
                 << (obj_type == kLinear ? "log-likelihood" : "objective")
                 << " for '" << name << "' is "
-                << (info.tot_objective / info.tot_weight) << " per frame"
-                << ", over " << info.tot_weight << " frames.";
+                << (info.tot_objective / info.tot_weight) << " per chunk"
+                << ", over " << info.tot_weight << " chunk.";
       if (info.tot_weight > 0)
         ans = true;
     }
   }
+  if (config_.compute_accuracy) {  // now print equal error-rates.
+    iter = acc_info_.begin();
+    end = acc_info_.end();
+    for (; iter != end; ++iter) {
+      const std::string &name = iter->first;
+      const SimpleObjectiveInfo &info = iter->second;
+      KALDI_LOG << "Overall accuracy for '" << name << "' is "
+                << (info.tot_objective / info.tot_weight) << " per pair of chunks"
+                << ", over " << info.tot_weight << " pairs of chunks.";
+      // don't bother changing ans; the loop over the regular objective should
+      // already have set it to true if we got any data.
+    }
+  }
   return ans;
+}
+
+void NnetXvectorComputeProb::ComputeAccuracy(
+    const CuMatrixBase<BaseFloat> &raw_scores,
+    BaseFloat *tot_weight_out,
+    BaseFloat *tot_accuracy_out) {
+  int32 num_rows = raw_scores.NumCols();
+  if (need_eer_threshold_) {
+    std::vector<BaseFloat> target_scores;
+    std::vector<BaseFloat> nontarget_scores;
+    for (int32 i = 0; i < num_rows; i++) {
+      for (int32 j = 0; j < num_rows; j++) {
+        if (i + 1 == j && i % 2 == 0) {
+          target_scores.push_back(raw_scores(i, j));
+        } else if (i < j) {
+          nontarget_scores.push_back(raw_scores(i, j));
+        }
+      }
+    }
+    (*tot_accuracy_out) = 1.0 - ComputeEer(&target_scores, &nontarget_scores);
+    (*tot_weight_out) = target_scores.size() + nontarget_scores.size();
+    need_eer_threshold_ = false;
+  } else {
+    int32 count = 0,
+          error = 0;
+    for (int32 i = 0; i < num_rows; i++) {
+      for (int32 j = 0; j < num_rows; j++) {
+        if (i + 1 == j && i % 2 == 0) {
+          if (raw_scores(i, j) < eer_threshold_)
+            error++;
+          count++;
+        } else if (i < j) {
+          if (raw_scores(i, j) >= eer_threshold_)
+            error++;
+          count++;
+        }
+      }
+    }
+    (*tot_accuracy_out) = 1.0 - static_cast<BaseFloat>(error) / count;
+    (*tot_weight_out) = count;
+  }
 }
 
 const SimpleObjectiveInfo* NnetXvectorComputeProb::GetObjective(
@@ -157,6 +236,29 @@ const SimpleObjectiveInfo* NnetXvectorComputeProb::GetObjective(
     return &(iter->second);
   else
     return NULL;
+}
+
+BaseFloat NnetXvectorComputeProb::ComputeEer(std::vector<BaseFloat> *target_scores,
+                     std::vector<BaseFloat> *nontarget_scores) {
+  KALDI_ASSERT(!target_scores->empty() && !nontarget_scores->empty());
+  std::sort(target_scores->begin(), target_scores->end());
+  std::sort(nontarget_scores->begin(), nontarget_scores->end());
+
+  int32 target_position = 0,
+      target_size = target_scores->size();
+  for (; target_position + 1 < target_size; target_position++) {
+    int32 nontarget_size = nontarget_scores->size(),
+        nontarget_n = nontarget_size * target_position * 1.0 / target_size,
+        nontarget_position = nontarget_size - 1 - nontarget_n;
+    if (nontarget_position  < 0)
+      nontarget_position = 0;
+    if ((*nontarget_scores)[nontarget_position] <
+        (*target_scores)[target_position])
+      break;
+  }
+  eer_threshold_ = (*target_scores)[target_position];
+  BaseFloat eer = target_position * 1.0 / target_size;
+  return eer;
 }
 
 } // namespace nnet3

@@ -9,8 +9,8 @@ cmd=run.pl
 num_epochs=4      # Number of epochs of training;
                   # the number of iterations is worked out from this.
 num_shifts=3
-initial_effective_lrate=0.0003
-final_effective_lrate=0.00003
+initial_effective_lrate=0.003
+final_effective_lrate=0.0003
 num_jobs_initial=2 # Number of neural net jobs to run in parallel at the start of training
 num_jobs_final=8   # Number of neural net jobs to run in parallel at the end of training
 stage=-3
@@ -133,10 +133,10 @@ while [ $x -lt $num_iters ]; do
     # Set off jobs doing some diagnostics, in the background.
     # Use the egs dir from the previous iteration for the diagnostics
     $cmd JOB=1:$num_diagnostic_archives $dir/log/compute_prob_valid.$x.JOB.log \
-      nnet3-xvector-compute-prob $dir/$x.raw \
+      nnet3-xvector-compute-prob --compute-accuracy=true $dir/$x.raw \
             "ark:nnet3-merge-egs --measure-output-frames=false ark:$egs_dir/valid_diagnostic_egs.JOB.ark ark:- |" &
     $cmd JOB=1:$num_diagnostic_archives $dir/log/compute_prob_train.$x.JOB.log \
-      nnet3-xvector-compute-prob $dir/$x.raw \
+      nnet3-xvector-compute-prob --compute-accuracy=true $dir/$x.raw \
            "ark:nnet3-merge-egs --measure-output-frames=false ark:$egs_dir/train_diagnostic_egs.JOB.ark ark:- |" &
 
     if [ $x -gt 0 ]; then
