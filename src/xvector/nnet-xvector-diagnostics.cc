@@ -101,10 +101,9 @@ void NnetXvectorComputeProb::ProcessOutputs(NnetComputer *computer) {
               dim_xvector = xvector_pairs.NumCols();
         int32 s_dim = dim_xvector * (dim_xvector + 1) / 2;
 
-        CuMatrix<BaseFloat> xvector_deriv(num_rows,
-                                          dim_xvector,
+        CuMatrix<BaseFloat> xvector_deriv(num_rows, dim_xvector,
                                           kUndefined),
-                            raw_scores(num_rows, num_rows);
+                            raw_scores(num_rows, num_rows, kUndefined);
 
         // convert CuVector to CuSpMatrix
         CuSpMatrix<BaseFloat> xvec_s_sp(dim_xvector);
