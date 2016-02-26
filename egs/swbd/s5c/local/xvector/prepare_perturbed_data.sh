@@ -10,6 +10,8 @@ stage=1
 train_stage=-10
 generate_alignments=true # false if doing ctc training
 speed_perturb=true
+mfcc_config=conf/mfcc_hires.conf
+mfccdir=mfcc
 
 . ./path.sh
 . ./utils/parse_options.sh
@@ -27,13 +29,12 @@ if [ $stage -le 1 ]; then
     if [ -f data/${datadir}_sp_hires/feats.scp ]; then
       echo "$0: directory data/${datadir}_sp_hires/feats.scp already exists, skipping creating it."
     else
-      mfccdir=mfcc
       utils/copy_data_dir.sh data/${datadir}_sp data/${datadir}_sp_hires
-      steps/make_mfcc.sh --cmd "$train_cmd" --nj 50 \
+      steps/make_mfcc.sh --cmd "$train_cmd" --nj 50 --mfcc-config $mfcc_config \
         data/${datadir}_sp_hires exp/make_mfcc/${datadir}_sp_hires $mfccdir || exit 1;
       # we typically won't need the cmvn stats when using hires features-- it's
       # mostly for neural nets.
-      utils/fix_data_dir.sh data/${dataset}_sp_hires  # remove segments with problems
+      utils/fix_data_dir.sh data/${datadir}_sp_hires  # remove segments with problems
     fi
   done
 fi
@@ -50,7 +51,7 @@ if [ $stage -le 2 ]; then
       echo "$0: data/${dataset}_hires/feats.scp already exists, skipping mfcc generation"
     else
       utils/copy_data_dir.sh data/$dataset data/${dataset}_hires
-      steps/make_mfcc.sh --cmd "$train_cmd" --nj 10 --mfcc-config conf/mfcc_hires.conf \
+      steps/make_mfcc.sh --cmd "$train_cmd" --nj 10 --mfcc-config $mfcc_config \
         data/${dataset}_hires exp/make_hires/$dataset $mfccdir;
       steps/compute_cmvn_stats.sh data/${dataset}_hires exp/make_hires/$dataset $mfccdir;
       utils/fix_data_dir.sh data/${dataset}_hires  # remove segments with problems

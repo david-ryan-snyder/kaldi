@@ -166,7 +166,7 @@ bool NnetXvectorComputeProb::PrintTotalStats() const {
                 << (obj_type == kLinear ? "log-likelihood" : "objective")
                 << " for '" << name << "' is "
                 << (info.tot_objective / info.tot_weight) << " per chunk"
-                << ", over " << info.tot_weight << " chunk.";
+                << ", over " << info.tot_weight << " chunks.";
       if (info.tot_weight > 0)
         ans = true;
     }
