@@ -71,8 +71,10 @@ class NnetXvectorComputeProb {
   ~NnetXvectorComputeProb();
  private:
   void ProcessOutputs(NnetComputer *computer);
+  // Returns the Equal Error Rate (EER) and sets the threshold.
   BaseFloat ComputeEer(std::vector<BaseFloat> *target_scores,
                      std::vector<BaseFloat> *nontarget_scores);
+  // Computes the accuracy for this minibatch.
   void ComputeAccuracy(const CuMatrixBase<BaseFloat> &raw_scores,
                        BaseFloat *tot_weight_out,
                        BaseFloat *tot_accuracy_out);

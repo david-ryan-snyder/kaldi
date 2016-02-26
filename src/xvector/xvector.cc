@@ -41,6 +41,8 @@ void ComputeXvectorObjfAndDeriv(
     KALDI_ASSERT(deriv_xvector->NumCols() == xvector_dim);
     KALDI_ASSERT(deriv_xvector->NumRows() == N);
     KALDI_ASSERT(deriv_S->Dim() == S_dim);
+    deriv_xvector->SetZero();
+    deriv_S->SetZero();
   }
 
   CuMatrix<BaseFloat> S_tmp(S),

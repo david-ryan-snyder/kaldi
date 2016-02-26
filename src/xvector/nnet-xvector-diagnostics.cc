@@ -171,17 +171,16 @@ bool NnetXvectorComputeProb::PrintTotalStats() const {
         ans = true;
     }
   }
-  if (config_.compute_accuracy) {  // now print equal error-rates.
+  if (config_.compute_accuracy) {  // Now print the accuracy.
     iter = acc_info_.begin();
     end = acc_info_.end();
     for (; iter != end; ++iter) {
       const std::string &name = iter->first;
       const SimpleObjectiveInfo &info = iter->second;
       KALDI_LOG << "Overall accuracy for '" << name << "' is "
-                << (info.tot_objective / info.tot_weight) << " per pair of chunks"
+                << (info.tot_objective / info.tot_weight)
+                << " per pair of chunks"
                 << ", over " << info.tot_weight << " pairs of chunks.";
-      // don't bother changing ans; the loop over the regular objective should
-      // already have set it to true if we got any data.
     }
   }
   return ans;
@@ -192,6 +191,8 @@ void NnetXvectorComputeProb::ComputeAccuracy(
     BaseFloat *tot_weight_out,
     BaseFloat *tot_accuracy_out) {
   int32 num_rows = raw_scores.NumCols();
+  // The accuracy uses the EER threshold, which is calculated
+  // on the first minibatch.
   if (need_eer_threshold_) {
     std::vector<BaseFloat> target_scores;
     std::vector<BaseFloat> nontarget_scores;
@@ -238,19 +239,19 @@ const SimpleObjectiveInfo* NnetXvectorComputeProb::GetObjective(
     return NULL;
 }
 
-BaseFloat NnetXvectorComputeProb::ComputeEer(std::vector<BaseFloat> *target_scores,
-                     std::vector<BaseFloat> *nontarget_scores) {
+BaseFloat NnetXvectorComputeProb::ComputeEer(
+    std::vector<BaseFloat> *target_scores,
+    std::vector<BaseFloat> *nontarget_scores) {
   KALDI_ASSERT(!target_scores->empty() && !nontarget_scores->empty());
   std::sort(target_scores->begin(), target_scores->end());
   std::sort(nontarget_scores->begin(), nontarget_scores->end());
-
   int32 target_position = 0,
       target_size = target_scores->size();
   for (; target_position + 1 < target_size; target_position++) {
     int32 nontarget_size = nontarget_scores->size(),
         nontarget_n = nontarget_size * target_position * 1.0 / target_size,
         nontarget_position = nontarget_size - 1 - nontarget_n;
-    if (nontarget_position  < 0)
+    if (nontarget_position < 0)
       nontarget_position = 0;
     if ((*nontarget_scores)[nontarget_position] <
         (*target_scores)[target_position])
