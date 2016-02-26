@@ -30,13 +30,13 @@ NnetXvectorTrainer::NnetXvectorTrainer(const NnetTrainerOptions &config,
     nnet_(nnet),
     compiler_(*nnet, config_.optimize_config),
     num_minibatches_processed_(0) {
-  if (config.zero_component_stats)
+  if (config_.zero_component_stats)
     ZeroComponentStats(nnet);
   if (config.momentum == 0.0 && config.max_param_change == 0.0) {
     delta_nnet_= NULL;
   } else {
-    KALDI_ASSERT(config.momentum >= 0.0 &&
-                 config.max_param_change >= 0.0);
+    KALDI_ASSERT(config_.momentum >= 0.0 &&
+                 config_.max_param_change >= 0.0);
     delta_nnet_ = nnet_->Copy();
     bool is_gradient = false;  // setting this to true would disable the
                                // natural-gradient updates.
@@ -247,7 +247,7 @@ void GetComputationRequestXvector(const Nnet &nnet,
   request->need_model_derivative = need_model_derivative;
   request->store_component_stats = store_component_stats;
 
-  // xvector-egs have multiple inputs(e.g. different inputs correspond
+  // xvector-egs has multiple inputs(e.g. different inputs correspond
   // to different chunks and no outputs.
   for (size_t i = 0; i < eg.io.size(); i++) {
     const NnetIo &io = eg.io[i];
@@ -264,21 +264,29 @@ void GetComputationRequestXvector(const Nnet &nnet,
     IoSpecification &io_spec = dest.back();
     io_spec.name = name;
     io_spec.indexes = io.indexes;
-    io_spec.has_deriv = nnet.IsOutputNode(node_index) && need_model_derivative;
+    io_spec.has_deriv = false;
   }
 
   // We only need the output on frame t=0 for each n.
   int32 io_index_size = request->inputs[0].indexes.size(),
-         n_indx_size = 0;
+        n_indx_size = 1e6, t_ind;
   std::vector<Index> output_indexes,
     affine_output_indexes;
   affine_output_indexes.resize(1);
   affine_output_indexes[0].n = 0;
   affine_output_indexes[0].t = 0;
 
-  for (int32 indx = 0; indx < io_index_size; indx++)
-    if (request->inputs[0].indexes[indx].t == 0)
-     n_indx_size++;
+  std::map<int32, int32> n_indx_sizes;
+  for (int32 indx = 0; indx < io_index_size; indx++) {
+    t_ind = request->inputs[0].indexes[indx].t;
+    if (n_indx_sizes.count(t_ind) != 0)
+      n_indx_sizes[t_ind] += 1;
+    else
+      n_indx_sizes.insert(std::make_pair(t_ind, 1));
+  }
+  std::map<int32, int32>::const_iterator iter;
+  for (iter = n_indx_sizes.begin(); iter != n_indx_sizes.end(); iter++)
+    n_indx_size = std::min(n_indx_size, iter->second);
 
   output_indexes.resize(n_indx_size);
   for (int32 indx = 0; indx < n_indx_size; indx++) {

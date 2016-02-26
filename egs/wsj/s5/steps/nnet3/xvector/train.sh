@@ -8,7 +8,6 @@
 cmd=run.pl
 num_epochs=4      # Number of epochs of training;
                   # the number of iterations is worked out from this.
-diss_scale=1.0    # scale value used to scale the dissimalarity part in objective function.
 num_shifts=3
 initial_effective_lrate=0.003
 final_effective_lrate=0.0003
