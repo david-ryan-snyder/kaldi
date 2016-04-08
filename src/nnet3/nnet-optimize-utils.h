@@ -68,19 +68,28 @@ struct NnetOptimizeOptions;  // Forward declaration.
        no such command, then the command index of the deallocation command
        for 'submatrix'; or if this does not exist, then num-commands.
 
-   The conditions that must be satisfied for both left and right merges:
-     - It cannot be the case that m1 and m2 are both inputs, or that they are
-       both outputs.  [condition c1]
-     - If either m1 or m2 is an input or an output, then s1 must be the entirety
-       of m1 and s2 must be the entirety of m2 (this is because inputs and outputs
-       must be whole matrices). [condition c2]
-     - If we are left-merging (deleting s2,m2), then s2 must be the entirety of m2.
-       [condition c3]
-     - If we are right-merging (deleting s1,m1), then s1 must be the entirety of m1.
-       [condition c4]
-     - None of the the variables underlying s1 and s2 may be marked as 'dirty'
-       (implying that they were the subjects of a previous merge during the lifetime of
-       this class) [condition c5]
+   The conditions that must be satisfied for merges are as follows:
+     - Condition c1: it cannot be the case that m1 and m2 are both inputs, or
+       that they are both outputs.
+     - Condition c2: If either m1 or m2 is an input or an output, then s1 must
+       be the entirety of m1 and s2 must be the entirety of m2 (this is because
+       inputs and outputs must be whole matrices).
+     - Condition c3: if we are left-merging (deleting s2,m2), then s2 must be the
+       entirety of m2.
+     - Condition c4: If we are right-merging (deleting s1,m1), then s1 must be
+       the entirety of m1.
+     - Condition c5: None of the the variables underlying s1 and s2 may be
+       marked as 'dirty' (implying that they were the subjects of a previous
+       merge during the lifetime of this class).
+     - Condition c6: if we are left-merging (deleting s2, m2) and m2 has
+       stride_type == kStrideEqualNumCols, then s1 must be the entirety of m1.
+       [note: because of condition c3, we can assume that s2 is the entirety of
+       m2.]
+     - Condition c7: if we are right-merging (deleting s1, m1) and m1 has
+       stride_type == kStrideEqualNumCols, then s2 must be the entirety of m2.
+       [note: because of condition c4, we can assume that s1 is the entirety of
+       m1.]
+
 
    If the command C is case (a), i.e. an assignment operation, then the following
    conditions must apply:
@@ -90,7 +99,8 @@ struct NnetOptimizeOptions;  // Forward declaration.
    Otherwise (cases (b) and (c), in-place propagate or backprop), we insist that:
      - first-access(s2) == C
      - last-access(s1) == C
-
+   Note: in either case, these conditions imply that s2 is not an input and s1 is
+   not an output.
 
    The sequence of things we have to do for a right-merge (in which we delete
    s1,m1) is as follows:
@@ -101,13 +111,18 @@ struct NnetOptimizeOptions;  // Forward declaration.
      - If it was an assignment [case (a)], replace the assignment command with a
        no-op.
      - If both m1 and m2 have commands that allocate them, keep only the
-       earlier of the two and make it refer to m1 (otherwise delete any
-       allocation command, because m1 must be an input); and make sure
-       it zeroes the new data (later we can change it to undefined
-       initialization, if possible).
+       allocation command for m2, and make sure that it zeroes the data (we can
+       later change to undefined if allowed) and that it's before the first
+       non-allocation access of m1.  Otherwise remove any allocation commands
+       (the merged variable is an input).
      - If both m1 and m2 have commands that deallocate them, keep only the
-       later of the two and make it refer to m2 (otherwise delete any
-       deallocation command, because m2 must be an output).
+       deallocation command for m2, and make sure that it's after the last
+       access of m1 (otherwise delete any deallocation command, because m2 must
+       be an output).  [note: previously we kept the later of the 2 commands,
+       but this had the effect of making inaccurate the Analyzer info for
+       a matrix (m2) that might later be used.
+     - If m1 had stride_type == kStrideEqualNumCols, set m2's stride_type
+       to kStrideEqualNuMCols.
 
 
    The sequence of things we have to do for a right-merge (in which we delete
@@ -116,9 +131,9 @@ struct NnetOptimizeOptions;  // Forward declaration.
        [later we'll renumber so that there are no duplicates.]
      - If m2 was an output, replace it as an output with m1 and remove the
        command that deallocated m1.
-    ... the last three bullet-points, regarding removing the assignment
-        command, and allocation and deallocation, are the same as for a
-        left-merge.
+     ... the last four bullet-points, regarding removing the assignment command,
+        and allocation and deallocation, and stride-type, are the same as for a
+        left-merge, except swap m1 and m2.
 
    At the end when we call RemoveOrphanMatrices(), the renumbering code will
    automatically detect that there are duplicate submatrices, and will merge
@@ -215,21 +230,20 @@ class ModelUpdateConsolidator {
   void AddCommandsToComputation();
 
   /// You call this function when you want to consolidate the values of a list
-  /// of submatrices taken just prior particular commands.  The input 'commands'
-  /// and 'submatrices' lists must be the same size, and size must be > 1.  This
-  /// function will create a new matrix that is the row-wise concatentation of
-  /// all these submatrices, with values taken just prior to the respective
-  /// command indexes.  This function will will add to extra_commands_ the
-  /// commands to do the copying at the appropriate places (at the supplied
-  /// command indexes; they will be inserted just before).  The return value is
-  /// the submatrix index of a submatrix that represents the whole of the
-  /// consolidated matrix.  This command will insert, at the beginning of
-  /// the computation (in extra_commands_[0]), a command to initialize the matrix;
-  /// and will append to final_deallocate_commands_ the commands to deallocate
-  /// the matrix.
-  /// If computation_->matrix_debug_info is nonempty, this function will
-  /// also update computation_->matrix_debug_info with suitable values
-  /// for the newly added matrix
+  /// of submatrices taken just prior to particular commands.  The input
+  /// 'commands' and 'submatrices' lists must be the same size, and size must be
+  /// > 1.  This function will create a new matrix that is the row-wise
+  /// concatentation of all these submatrices, with values taken just prior to
+  /// the respective command indexes.  This function will will add to
+  /// extra_commands_ the commands to do the copying at the appropriate places
+  /// (at the supplied command indexes; they will be inserted just before).  The
+  /// return value is the submatrix index of a submatrix that represents the
+  /// whole of the consolidated matrix.  This command will insert, at the
+  /// beginning of the computation (in extra_commands_[0]), a command to
+  /// initialize the matrix; and will append to final_deallocate_commands_ the
+  /// commands to deallocate the matrix.  If computation_->matrix_debug_info is
+  /// nonempty, this function will also update computation_->matrix_debug_info
+  /// with suitable values for the newly added matrix
   int32 ConsolidateSubmatrices(
       const std::vector<int32> &commands,
       const std::vector<int32> &submatrices);

@@ -34,7 +34,6 @@ namespace nnet3 {
 struct SimpleObjectiveInfo {
   double tot_weight;
   double tot_objective;
-
   SimpleObjectiveInfo(): tot_weight(0.0),
                          tot_objective(0.0) { }
 
@@ -80,8 +79,12 @@ struct NnetComputeProbOptions {
  */
 class NnetComputeProb {
  public:
+  // does not store a reference to 'config' but does store one to 'nnet'.
   NnetComputeProb(const NnetComputeProbOptions &config,
                   const Nnet &nnet);
+
+  // Reset the likelihood stats, and the derivative stats (if computed).
+  void Reset();
 
   // compute objective on one minibatch.
   void Compute(const NnetExample &eg);
@@ -102,8 +105,8 @@ class NnetComputeProb {
  private:
   void ProcessOutputs(const NnetExample &eg,
                       NnetComputer *computer);
-  
-  const NnetComputeProbOptions config_;
+
+  NnetComputeProbOptions config_;
   const Nnet &nnet_;
 
   Nnet *deriv_nnet_;
@@ -111,7 +114,7 @@ class NnetComputeProb {
 
   // this is only for diagnostics.
   int32 num_minibatches_processed_;
-    
+
   unordered_map<std::string, SimpleObjectiveInfo, StringHasher> objf_info_;
 
   unordered_map<std::string, SimpleObjectiveInfo, StringHasher> accuracy_info_;
@@ -144,7 +147,7 @@ class NnetComputeProb {
                      indexes r such that the maximum column index of row r of
                      supervision and nnet_output is the same, of the sum of the
                      r'th row of supervision (i.e. the row's weight).
-   
+
 */
 void ComputeAccuracy(const GeneralMatrix &supervision,
                      const CuMatrixBase<BaseFloat> &nnet_output,

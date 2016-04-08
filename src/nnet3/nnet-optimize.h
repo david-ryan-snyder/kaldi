@@ -1,6 +1,7 @@
 // nnet3/nnet-optimize.h
 
-// Copyright 2015    Johns Hopkins University (author: Daniel Povey)
+// Copyright      2015  Johns Hopkins University (author: Daniel Povey)
+//                2015  Xiaohui Zhang
 
 // See ../../COPYING for clarification regarding multiple authors
 //
@@ -36,6 +37,7 @@ struct NnetOptimizeOptions {
   bool consolidate_model_update;
   bool propagate_in_place;
   bool backprop_in_place;
+  bool convert_addition;
   bool remove_assignments;
   bool allow_left_merge;
   bool allow_right_merge;
@@ -49,6 +51,7 @@ struct NnetOptimizeOptions {
                          consolidate_model_update(true),
                          propagate_in_place(true),
                          backprop_in_place(true),
+                         convert_addition(true),
                          remove_assignments(true),
                          allow_left_merge(true),
                          allow_right_merge(true),
@@ -69,12 +72,17 @@ struct NnetOptimizeOptions {
                    "disable optimization that allows in-place propagation");
     opts->Register("backprop-in-place", &backprop_in_place, "Set to false to "
                    "disable optimization that allows in-place backprop");
+    opts->Register("convert-addition", &convert_addition, "Set to false to "
+                   "disable the optimization that converts Add commands into "
+                   "Copy commands wherever possible.");
     opts->Register("remove-assignments", &remove_assignments, "Set to false to "
                    "disable optimization that removes redundant assignments");
     opts->Register("allow-left-merge", &allow_left_merge, "Set to false to "
-                   "disable left-merging of variables (obscure option)");
+                   "disable left-merging of variables in remove-assignments "
+                   "(obscure option)");
     opts->Register("allow-right-merge", &allow_right_merge, "Set to false to "
-                   "disable right-merging of variables (obscure option)");
+                   "disable right-merging of variables in remove-assignments "
+                   "(obscure option)");
     opts->Register("initialize-undefined", &initialize_undefined, "Set to false "
                    "to disable optimization that avoids redundant zeroing");
     opts->Register("move-sizing-commands", &move_sizing_commands, "Set to false "
@@ -92,6 +100,9 @@ struct NnetOptimizeOptions {
                    "at when updating the model.  This is an optimization that "
                    "saves time in the backprop phase for recurrent frameworks");
   }
+  void Read(std::istream &is, bool binary);
+  void Write(std::ostream &os, bool binary) const;
+  bool operator == (const NnetOptimizeOptions &other) const;
 };
 
 /// This is the top-level function for optimizing a computation.
@@ -140,6 +151,8 @@ class CachingOptimizingCompiler {
   /// It calls ComputeCudaIndexes() for you, because you wouldn't
   /// be able to do this on a const object.
   const NnetComputation* Compile(const ComputationRequest &request);
+  void ReadCache(std::istream &is, bool binary);
+  void WriteCache(std::ostream &os, bool binary) const;
  private:
   const Nnet &nnet_;
   NnetOptimizeOptions opt_config_;
@@ -161,10 +174,10 @@ class CachingOptimizingCompiler {
     ComputationRequestPtrEqual> CacheType;
   CacheType computation_cache_;
 
-  // This function updates the computation cache. It is called within
-  // Compile(). It insert the request to the end of the queue, and purge
-  // the least-recently-accessed request from the queue and the cache
-  // if the capacity is reached.
+  // This function updates the computation cache. It is called within Compile().
+  // It takes ownership of the pointers.  It inserts the request at the end of
+  // the queue, and purges the least-recently-accessed request from the queue and
+  // the cache if the capacity is reached.
   void UpdateCache(const ComputationRequest *request,
                    NnetComputation *computation);
   // This function updates the recently accessed queue.
@@ -217,6 +230,12 @@ void LimitDerivativeTimes(const Nnet &nnet,
 void ConsolidateModelUpdate(const Nnet &nnet,
                             const ComputationRequest &request,
                             NnetComputation *computation);
+
+/// This converts addition operations (things with Add in their names) to
+/// copy operations (things with Copy in their names).  This is both slightly
+/// more efficient,
+void ConvertAdditionToAssignment(const Nnet &nnet,
+                                 NnetComputation *computation);
 
 
 /// This wraps class VariableMergingOptimizer in a simplified interface.
