@@ -114,12 +114,12 @@ double Plda::TransformIvector(const PldaConfig &config,
   double normalization_factor;
   transformed_ivector->CopyFromVec(offset_);
   transformed_ivector->AddMatVec(1.0, transform_, kNoTrans, ivector, 1.0);
-  if (config.normalize_length)
+  if (config.normalize_length_simple)
+    normalization_factor = sqrt(transformed_ivector->Dim())
+                                / transformed_ivector->Norm(2.0);
+  else
     normalization_factor = GetNormalizationFactor(*transformed_ivector,
                                                        num_examples);
-  else if (config.normalize_length_simple)
-     normalization_factor = sqrt(transformed_ivector->Dim())
-                                / transformed_ivector->Norm(2.0);
   if (config.normalize_length)
     transformed_ivector->Scale(normalization_factor);
   return normalization_factor;
