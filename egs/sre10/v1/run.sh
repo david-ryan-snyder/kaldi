@@ -40,27 +40,19 @@ utils/combine_data.sh data/train \
   data/swbd_cellular1_train data/swbd_cellular2_train \
   data/swbd2_phase2_train data/swbd2_phase3_train data/sre
 
-steps/make_mfcc.sh --mfcc-config conf/mfcc.conf --nj 40 --cmd "$train_cmd" \
-    data/train exp/make_mfcc $mfccdir
-steps/make_mfcc.sh --mfcc-config conf/mfcc.conf --nj 40 --cmd "$train_cmd" \
-    data/sre exp/make_mfcc $mfccdir
-steps/make_mfcc.sh --mfcc-config conf/mfcc.conf --nj 40 --cmd "$train_cmd" \
-    data/sre10_train exp/make_mfcc $mfccdir
-steps/make_mfcc.sh --mfcc-config conf/mfcc.conf --nj 40 --cmd "$train_cmd" \
-    data/sre10_test exp/make_mfcc $mfccdir
+for dir in train sre sre10_train sre10_test; do
+  steps/make_mfcc.sh --mfcc-config conf/mfcc.conf --nj 40 --cmd "$train_cmd" \
+      data/$dir exp/make_mfcc $mfccdir
+done
 
 for name in sre sre10_train sre10_test train; do
   utils/fix_data_dir.sh data/${name}
 done
 
-sid/compute_vad_decision.sh --nj 40 --cmd "$train_cmd" \
-    data/train exp/make_vad $vaddir
-sid/compute_vad_decision.sh --nj 40 --cmd "$train_cmd" \
-    data/sre exp/make_vad $vaddir
-sid/compute_vad_decision.sh --nj 40 --cmd "$train_cmd" \
-    data/sre10_train exp/make_vad $vaddir
-sid/compute_vad_decision.sh --nj 40 --cmd "$train_cmd" \
-    data/sre10_test exp/make_vad $vaddir
+for dir in train sre sre10_train sre10_test; do
+  sid/compute_vad_decision.sh --nj 40 --cmd "$train_cmd" \
+      data/$dir exp/make_vad $vaddir
+done
 
 for name in sre sre10_train sre10_test train; do
   utils/fix_data_dir.sh data/${name}
@@ -103,7 +95,7 @@ local/scoring_common.sh data/sre data/sre10_train data/sre10_test \
   exp/ivectors_sre exp/ivectors_sre10_train exp/ivectors_sre10_test
 
 # The commented out scripts show how to do cosine scoring with and without
-# first reducing the i-vector dimensionality with LDA. PLDA tends to work 
+# first reducing the i-vector dimensionality with LDA. PLDA tends to work
 # best, so we don't focus on the scores obtained here.
 #
 # local/cosine_scoring.sh data/sre10_train data/sre10_test \
@@ -130,12 +122,12 @@ cat local/scores_gmm_2048_dep_male/plda_scores local/scores_gmm_2048_dep_female/
   > local/scores_gmm_2048_dep_pooled/plda_scores
 
 # GMM-2048 PLDA EER
-# ind pooled: 2.49
 # ind female: 2.35
-# ind male:   2.51
-# dep female: 2.33
-# dep male:   1.59
-# dep pooled: 2.16
+# ind male:   2.17
+# ind pooled: 2.32
+# dep female: 2.30
+# dep male:   1.50
+# dep pooled: 1.94
 echo "GMM-$num_components EER"
 for x in ind dep; do
   for y in female male pooled; do
