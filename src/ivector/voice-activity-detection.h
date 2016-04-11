@@ -38,16 +38,16 @@ namespace kaldi {
   for automatic speech recognition (ASR) because it makes independent
   decisions for each frame without imposing any notion of continuity.
 */
- 
+
 struct VadEnergyOptions {
   BaseFloat vad_energy_threshold;
   BaseFloat vad_energy_mean_scale;
   int32 vad_frames_context;
   BaseFloat vad_proportion_threshold;
-  
+
   VadEnergyOptions(): vad_energy_threshold(5.0),
                       vad_energy_mean_scale(0.5),
-                      vad_frames_context(5),
+                      vad_frames_context(0),
                       vad_proportion_threshold(0.6) { }
   void Register(OptionsItf *opts) {
     opts->Register("vad-energy-threshold", &vad_energy_threshold,
@@ -72,7 +72,7 @@ struct VadEnergyOptions {
 /// voiced, 0 otherwise.  There are no continuity constraints.
 /// This method is a very simple energy-based method which only looks
 /// at the first coefficient of "input_features", which is assumed to
-/// be a log-energy or something similar.  A cutoff is set-- we use 
+/// be a log-energy or something similar.  A cutoff is set-- we use
 /// a formula of the general type: cutoff = 5.0 + 0.5 * (average log-energy
 /// in this file), and for each frame the decision is based on the
 /// proportion of frames in a context window around the current frame,

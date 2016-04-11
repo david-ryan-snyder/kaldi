@@ -53,7 +53,7 @@ struct PldaConfig {
   // prior to dot-product scoring.
   bool normalize_length;
   bool normalize_length_simple;
-  PldaConfig(): normalize_length(true), normalize_length_simple(false) { }
+  PldaConfig(): normalize_length(false), normalize_length_simple(false) { }
   void Register(OptionsItf *opts) {
     opts->Register("normalize-length", &normalize_length,
                    "If true, do length normalization as part of PLDA (see code for "

@@ -38,7 +38,8 @@ fi
 mkdir -p $scores_dir/log
 
 run.pl $scores_dir/log/plda_scoring.log \
-   ivector-plda-scoring --num-utts=ark:${enroll_ivec_dir}/num_utts.ark \
+   ivector-plda-scoring --normalize-length=true \
+   --num-utts=ark:${enroll_ivec_dir}/num_utts.ark \
    "ivector-copy-plda --smoothing=0.0 ${plda_ivec_dir}/plda - |" \
    "ark:ivector-subtract-global-mean ${plda_ivec_dir}/mean.vec scp:${enroll_ivec_dir}/spk_ivector.scp ark:- |" \
    "ark:ivector-subtract-global-mean ${plda_ivec_dir}/mean.vec scp:${test_ivec_dir}/ivector.scp ark:- |" \
