@@ -9,7 +9,8 @@ LDLIBS += $(CUDA_LDLIBS)
 BINFILES = nnet3-xvector-get-egs nnet3-xvector-compute-prob \
            nnet3-xvector-show-progress nnet3-xvector-train \
            nnet3-xvector-compute nnet3-xvector-scoring nnet3-xvector-get-egs-sre \
-           nnet3-xvector-get-egs-sre-subsample nnet3-xvector-compute-simple
+           nnet3-xvector-get-egs-sre-subsample nnet3-xvector-compute-simple \
+           nnet3-xvector-compute-lid
 
 OBJFILES =
 
