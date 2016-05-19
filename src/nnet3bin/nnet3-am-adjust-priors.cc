@@ -85,19 +85,19 @@ int main(int argc, char *argv[]) {
         "Usage: nnet3-am-adjust-priors [options] <nnet-in> <summed-posterior-vector-in> <nnet-out>\n"
         "e.g.:\n"
         " nnet3-am-adjust-priors final.mdl counts.vec final.mdl\n";
-    
+
     bool binary_write = true;
     BaseFloat prior_floor = 1.0e-15; // Have a very low prior floor, since this method
                                      // isn't likely to have a problem with very improbable
                                      // classes.
-    
+
     ParseOptions po(usage);
     po.Register("binary", &binary_write, "Write output in binary mode");
     po.Register("prior-floor", &prior_floor, "When setting priors, floor for "
                 "priors (only used to avoid generating NaNs upon inversion)");
 
     po.Read(argc, argv);
-    
+
     if (po.NumArgs() != 3) {
       po.PrintUsage();
       exit(1);
@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
     std::string nnet_rxfilename = po.GetArg(1),
         posterior_vec_rxfilename = po.GetArg(2),
         nnet_wxfilename = po.GetArg(3);
-    
+
     TransitionModel trans_model;
     AmNnetSimple am_nnet;
     {
@@ -115,20 +115,20 @@ int main(int argc, char *argv[]) {
       trans_model.Read(ki.Stream(), binary_read);
       am_nnet.Read(ki.Stream(), binary_read);
     }
-    
+
 
     Vector<BaseFloat> posterior_vec;
     ReadKaldiObject(posterior_vec_rxfilename, &posterior_vec);
 
     KALDI_ASSERT(posterior_vec.Sum() > 0.0);
     posterior_vec.Scale(1.0 / posterior_vec.Sum()); // Renormalize
-    
+
     Vector<BaseFloat> old_priors(am_nnet.Priors());
 
     PrintPriorDiagnostics(old_priors, posterior_vec);
-    
+
     am_nnet.SetPriors(posterior_vec);
-        
+
     {
       Output ko(nnet_wxfilename, binary_write);
       trans_model.Write(ko.Stream(), binary_write);
