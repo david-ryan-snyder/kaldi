@@ -256,9 +256,9 @@ for job in range(args.num_jobs):
                                            langs[utterance_index]),
               file=f)
         if langs[utterance_index] in pdf2num:
-          pdf2num[langs[utterance_index]] += archive_chunk_lengths[archive_index]
+          pdf2num[langs[utterance_index]] += 1
         else:
-          pdf2num[langs[utterance_index]] = archive_chunk_lengths[archive_index]
+          pdf2num[langs[utterance_index]] = 1
     f.close()
 
 
