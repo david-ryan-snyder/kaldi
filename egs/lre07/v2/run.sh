@@ -117,6 +117,9 @@ steps/expand_feats.sh --cmd "$train_cmd" --min-length 400 \
                       data/train_cmvn_no_sil_expand \
                       exp/expand_feats $mfccdir
 
+utils/fix_data_dir.sh data/lre07_cmvn_no_sil_expand
+utils/fix_data_dir.sh data/train_cmvn_no_sil_expand
+
 # NOTE: This script trains the DNN
 local/xvector/run_lid.sh --train-stage -10 \
                          --stage -10 \

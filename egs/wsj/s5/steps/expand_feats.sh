@@ -51,4 +51,6 @@ $cmd JOB=1:$nj $logdir/${name}_expand.JOB.log \
 mv $data/feats.scp $data/feats.scp.bak
 cat $dir/${name}_expand.*.scp > $data/feats.scp
 
+utils/fix_data_dir.sh $data
+
 echo "Succeeded expanding features for $name into $data"

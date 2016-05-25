@@ -137,7 +137,7 @@ if f is None:
 langs = []
 for line in f:
     a = line.split()
-    if len(a) != 2 and utt_ids[len(langs)] != a[0]:
+    if len(a) != 2 or utt_ids[len(langs)] != a[0]:
         sys.exit("bad line in utt2lang file " + line);
     langs.append(int(a[1]))
 f.close()
