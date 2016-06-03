@@ -142,6 +142,8 @@ for line in f:
     langs.append(int(a[1]))
 f.close()
 
+lang_list = list(set(langs))
+
 if args.num_pdfs == -1:
   args.num_pdfs = max(langs) + 1
 
@@ -151,12 +153,14 @@ max_length = max(lengths)
 # this function returns a random integer utterance index, limited to utterances
 # above a minimum length in frames, with probability proportional to its length.
 def RandomUttAtLeastThisLong(min_length):
+    lang_id = random.randrange(0, len(lang_list))
+    lang = lang_list[lang_id]
     while True:
         i = random.randrange(0, num_utts)
         # read the next line as 'with probability lengths[i] / max_length'.
         # this allows us to draw utterances with probability with
         # prob proportional to their length.
-        if lengths[i] > min_length and random.random() < lengths[i] / float(max_length):
+        if langs[i] == lang and lengths[i] > min_length and random.random() < lengths[i] / float(max_length):
             return i
 
 def RandomChunkLength():
