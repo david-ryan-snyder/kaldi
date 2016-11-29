@@ -133,7 +133,7 @@ while [ $x -lt $num_iters ]; do
 
   if [ $stage -le $x ]; then
     echo "On iteration $x, learning rate is $this_learning_rate"
-    raw="nnet3-copy --learning-rate=$this_learning_rate $dir/$x.raw - |"
+    raw="nnet3-xvector-copy --floor-s=0.00001 --learning-rate=$this_learning_rate $dir/$x.raw - |"
 
     if [ $[$x%$diagnostic_period] == 0 ]; then
       # Set off jobs doing some diagnostics, in the background.

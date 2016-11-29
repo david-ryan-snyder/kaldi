@@ -31,6 +31,7 @@ subsample=5
 min_frames_per_chunk=50
 max_frames_per_chunk=300
 frames_per_iter=10000000 # have this many frames per archive.
+frame_shift=0.01
 
 frames_per_iter_diagnostic=1000000 # have this many frames per archive for
                                    # the archives used for diagnostics.
@@ -93,10 +94,7 @@ if [ ! -f $data/feats.scp ]; then
   exit 1
 fi
 
-frame_shift=0.01
 feat_dim=$(feat-to-dim scp:$data/feats.scp -) || exit 1
-echo "frame_shft = $frame_shift"
-echo "feat_dim = $feat_dim"
 
 mkdir -p $dir/info $dir/info $dir/temp
 temp=$dir/temp
@@ -114,8 +112,6 @@ fi
 feats="scp,s,cs:utils/filter_scp.pl $temp/uttlist.train $data/feats.scp |"
 valid_feats="scp,s,cs:utils/filter_scp.pl $temp/uttlist.valid $data/feats.scp |"
 train_subset_feats="scp,s,cs:utils/filter_scp.pl $temp/uttlist.train_subset $data/feats.scp |"
-
-#if [ 0 = 1 ]; then
 
 if [ $stage -le 1 ]; then
   echo "$0: getting list of validation utterances"

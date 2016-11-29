@@ -25,6 +25,7 @@ cmd=run.pl
 # each of length randomly chosen between $min_frames_per_eg and $max_frames_per_eg.
 # (however the lengths do not differ within the archives, to avoid triggering
 # excessive recompilation of computation graphs).
+frame_shift=0.01
 min_frames_per_chunk=50
 max_frames_per_chunk=300
 frames_per_iter=10000000 # have this many frames per archive.
@@ -90,27 +91,25 @@ if [ ! -f $data/feats.scp ]; then
   exit 1
 fi
 
-if [ ! -f $data/utt2dur ]; then
+#if [ ! -f $data/utt2dur ]; then
   # getting this utt2dur will normally be more lightweight than
   # getting the exact utterance-to-length map.
-  utils/data/get_utt2dur.sh $data || exit 1;
-fi
+#  utils/data/get_utt2dur.sh $data || exit 1;
+#fi
 
-frame_shift=$(utils/data/get_frame_shift.sh $data) || exit 1;
 feat_dim=$(feat-to-dim scp:$data/feats.scp -) || exit 1
 
 mkdir -p $dir/info $dir/info $dir/temp
 temp=$dir/temp
 
 echo $feat_dim > $dir/info/feat_dim
-
 if [ $stage -le 0 ]; then
   echo "$0: getting utt2len file"
-  # note: this utt2len file is only an approximation of the number of
-  # frames in each file.
-  cat $data/utt2dur | awk -v frame_shift=$frame_shift '{print $1, int($2 / frame_shift);}' > $dir/temp/utt2len
+  if [ ! -f $data/utt2len ]; then
+    feat-to-len scp:$data/feats.scp ark,t:$data/utt2len || exit 1;
+  fi
+  cp $data/utt2len $dir/temp/utt2len
 fi
-
 
 if [ $stage -le 1 ]; then
   echo "$0: getting list of validation utterances"

@@ -28,6 +28,7 @@ cmd=run.pl
 # (however the lengths do not differ within the archives, to avoid triggering
 # excessive recompilation of computation graphs).
 frame_shift=0.01
+unique_recordings=true
 min_frames_per_chunk=50
 max_frames_per_chunk=300
 frames_per_iter=10000000 # have this many frames per archive.
@@ -184,6 +185,7 @@ if [ $stage -le 3 ]; then
   echo "$0: allocating training examples"
   $cmd $dir/log/allocate_examples_train.log \
     steps/nnet3/xvector/allocate_examples_sre.py \
+      --unique-recordings=$unique_recordings \
       --min-frames-per-chunk=$min_frames_per_chunk \
       --max-frames-per-chunk=$max_frames_per_chunk \
       --frames-per-iter=$frames_per_iter \
@@ -198,6 +200,7 @@ if [ $stage -le 3 ]; then
   $cmd $dir/log/allocate_examples_train_subset.log \
     steps/nnet3/xvector/allocate_examples_sre.py \
       --prefix train_subset \
+      --unique-recordings=$unique_recordings \
       --min-frames-per-chunk=$min_frames_per_chunk \
       --max-frames-per-chunk=$max_frames_per_chunk \
       --randomize-chunk-length false \
@@ -212,6 +215,7 @@ if [ $stage -le 3 ]; then
   $cmd $dir/log/allocate_examples_valid.log \
     steps/nnet3/xvector/allocate_examples_sre.py \
       --prefix valid \
+      --unique-recordings=$unique_recordings \
       --min-frames-per-chunk=$min_frames_per_chunk \
       --max-frames-per-chunk=$max_frames_per_chunk \
       --randomize-chunk-length false \
