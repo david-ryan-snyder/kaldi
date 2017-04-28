@@ -39,11 +39,17 @@ int main(int argc, char *argv[]) {
 
     ParseOptions po(usage);
 
+    std::string spk_weight_rspecifier;
+
     bool binary = true;
     PldaEstimationConfig plda_config;
 
     plda_config.Register(&po);
 
+    po.Register("spk-weight-rspecifier", &spk_weight_rspecifier,
+        "Weights applied to each speaker in the training data.  "
+        "The typical use case is to increase the weight of an"
+        "in-domain subset of the training data");
     po.Register("binary", &binary, "Write output in binary mode");
 
     po.Read(argc, argv);
@@ -61,6 +67,7 @@ int main(int argc, char *argv[]) {
         num_utt_done = 0, num_utt_err = 0;
 
     SequentialTokenVectorReader spk2utt_reader(spk2utt_rspecifier);
+    RandomAccessBaseFloatReader spk_weight_reader(spk_weight_rspecifier);
     RandomAccessBaseFloatVectorReader ivector_reader(ivector_rspecifier);
 
     PldaStats plda_stats;
@@ -93,9 +100,19 @@ int main(int argc, char *argv[]) {
         Matrix<double> ivector_mat(ivectors.size(), ivectors[0].Dim());
         for (size_t i = 0; i < ivectors.size(); i++)
           ivector_mat.Row(i).CopyFromVec(ivectors[i]);
-        double weight = 1.0; // The code supports weighting but
-                             // we don't support this at the command-line
-                             // level yet.
+
+        double weight;
+        if (!spk_weight_rspecifier.empty()) {
+          if (!spk_weight_reader.HasKey(spk)) {
+            KALDI_WARN << "No weight in " << spk_weight_rspecifier
+                       << "provided for speaker " << spk;
+            num_spk_err++;
+          } else {
+            weight = spk_weight_reader.Value(spk);
+          }
+        } else {
+          weight = 1.0;
+        }
         plda_stats.AddSamples(weight, ivector_mat);
         num_spk_done++;
       }
