@@ -1,7 +1,7 @@
 // ivector/plda.h
 
-// Copyright 2013    Daniel Povey
-//           2015    David Snyder
+// Copyright 2013         Daniel Povey
+//           2015-2017    David Snyder
 
 
 // See ../../COPYING for clarification regarding multiple authors
@@ -73,8 +73,11 @@ struct PldaConfig {
 
 class Plda {
  public:
+
   Plda() { }
 
+  /// Interpolates the parameters of this Plda model with the input model.
+  void Interpolate(double alpha, const Plda &other);
 
   /// Transforms an iVector into a space where the within-class variance
   /// is unit and between-class variance is diagonalized.  The only
@@ -131,6 +134,13 @@ class Plda {
   void Read(std::istream &is, bool binary);
  protected:
   void ComputeDerivedVars(); // computes offset_.
+
+  void ComputeTransform(const SpMatrix<double> &within_var,
+                        const SpMatrix<double> &between_var);
+
+  void GetCovariances(SpMatrix<double> *within_var,
+                    SpMatrix<double> *between_var) const;
+
   friend class PldaEstimator;
   friend class PldaUnsupervisedAdaptor;
 
@@ -144,13 +154,13 @@ class Plda {
   Vector<double> offset_;  // derived variable: -1.0 * transform_ * mean_
 
  private:
-  KALDI_DISALLOW_COPY_AND_ASSIGN(Plda);
   /// This returns a normalization factor, which is a quantity we
   /// must multiply "transformed_ivector" by so that it has the length
   /// that it "should" have.  We assume "transformed_ivector" is an
   /// iVector in the transformed space (i.e., mean-subtracted, and
   /// multiplied by transform_).  The covariance it "should" have
   /// in this space is \Psi + I/num_examples.
+  KALDI_DISALLOW_COPY_AND_ASSIGN(Plda);
   double GetNormalizationFactor(const VectorBase<double> &transformed_ivector,
                                 int32 num_examples) const;
 
