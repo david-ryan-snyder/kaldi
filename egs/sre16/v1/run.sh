@@ -191,8 +191,6 @@ $train_cmd exp/scores/log/sre16_eval_scoring.log \
 echo "modelid    segment    side    LLR" > exp/scores/converted_sre16_eval_scores_snorm
 awk '{print $1, $2, "a", $3}' exp/scores/sre16_eval_scores_snorm >> exp/scores/converted_sre16_eval_scores_snorm
 
-python ${scoring_dir}/convert_kaldi_score.py exp/scores/sre16_eval_scores_snorm > exp/scores/converted_sre16_eval_scores_snorm
-
 # EER 11.12, DCF16 0.653
 python3 ${scoring_dir}/scoring.py \
   ${scoring_dir}/eval_config.ini -o exp/scores/converted_sre16_eval_scores_snorm 2>&1 | tee exp/scores/pool_results_snorm
