@@ -780,12 +780,27 @@ inline void cuda_equal_element_mask(dim3 Gr, dim3 Bl, const double *mat1,
   cudaD_equal_element_mask(Gr, Bl, mat1, mat2, mask, mat1_dim, mat2_stride,
                            mask_stride);
 }
+inline void cuda_compute_xvector_objf(dim3 Gr, dim3 Bl, const double *scores,
+                               MatrixDim scores_dim, double *obfj_terms,
+                               MatrixDim objf_dim, double *objf_derivs,
+                               MatrixDim derivs_dim) {
+  cudaD_compute_xvector_objf(Gr, Bl, scores, scores_dim, obfj_terms, objf_dim,
+                          objf_derivs, derivs_dim);
+}
 inline void cuda_equal_element_mask(dim3 Gr, dim3 Bl, const float *mat1,
                                     const float *mat2, float *mask,
                                     MatrixDim mat1_dim, int mat2_stride,
                                     int mask_stride) {
   cudaF_equal_element_mask(Gr, Bl, mat1, mat2, mask, mat1_dim, mat2_stride,
                            mask_stride);
+}
+
+inline void cuda_compute_xvector_objf(dim3 Gr, dim3 Bl, const float *scores,
+                               MatrixDim scores_dim, float *obfj_terms,
+                               MatrixDim objf_dim, float *objf_derivs,
+                               MatrixDim derivs_dim) {
+  cudaF_compute_xvector_objf(Gr, Bl, scores, scores_dim, obfj_terms, objf_dim,
+                          objf_derivs, derivs_dim);
 }
 inline void cuda_find_row_max_id(dim3 Gr, dim3 Bl, const double *mat,
                                  double *vec_val, int32_cuda *vec_id,

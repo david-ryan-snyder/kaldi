@@ -2737,6 +2737,32 @@ static void _diff_xent(const int32_cuda* vec_tgt, Real* mat_net_out,
 
 template<typename Real>
 __global__
+static void _compute_xvector_objf(const Real* scores, MatrixDim scores_dim,
+                                  Real* objf_terms, MatrixDim objf_dim,
+                                  Real* objf_derivs, MatrixDim derivs_dim) {
+  int32_cuda i = blockIdx.x * blockDim.x + threadIdx.x;
+  int32_cuda j = blockIdx.y * blockDim.y + threadIdx.y;
+  int32_cuda scores_index = i + j * scores_dim.stride;
+  int32_cuda objf_index = i + j * objf_dim.stride;
+  int32_cuda derivs_index = i + j * derivs_dim.stride;
+  Real K = 1.0 / (scores_dim.rows - 2.0);
+  Real L = scores[scores_index];
+  if (i < scores_dim.cols && j < scores_dim.rows) {
+    if (i + 1 == j && i % 2 == 0) {
+      objf_terms[objf_index] = L < -15 ? L : -log(1.0 + exp(-L));
+      objf_derivs[derivs_index] = L > 15 ? 0.0 : 1.0 / (1.0 + exp(L));
+    } else if (i < j) {
+      objf_terms[objf_index] = K * (L > 15 ? -L : -log(1.0 + exp(L)));
+      objf_derivs[derivs_index] = L < -15 ? 0 : -K / (1.0 + exp(-L));
+    } else {
+      objf_terms[objf_index] = 0.0;
+      objf_derivs[derivs_index] = 0.0;
+    }
+  }
+}
+
+template<typename Real>
+__global__
 static void _diff_softmax(Real* x, const MatrixDim dim, const Real* value,
                           const int value_stride, const Real* diff,
                           const int diff_stride) {
@@ -3994,6 +4020,14 @@ void cudaF_equal_element_mask(dim3 Gr, dim3 Bl, const float *mat1,
       mask_stride);
 }
 
+void cudaF_compute_xvector_objf(dim3 Gr, dim3 Bl, const float *scores,
+                                MatrixDim scores_dim, float *objf_terms,
+                                MatrixDim objf_dim, float *objf_derivs,
+                                MatrixDim derivs_dim) {
+  _compute_xvector_objf<<<Gr,Bl>>>(scores, scores_dim, objf_terms, objf_dim,
+    objf_derivs, derivs_dim);
+}
+
 /*
  * "double"
  */
@@ -4633,6 +4667,14 @@ void cudaD_equal_element_mask(dim3 Gr, dim3 Bl, const double *mat1,
                               int mask_stride) {
   _equal_element_mask<<<Gr,Bl>>>(mat1, mat2, mask, mat1_dim, mat2_stride,
       mask_stride);
+}
+
+void cudaD_compute_xvector_objf(dim3 Gr, dim3 Bl, const double *scores,
+                                MatrixDim scores_dim, double *objf_terms,
+                                MatrixDim objf_dim, double *objf_derivs,
+                                MatrixDim derivs_dim) {
+  _compute_xvector_objf<<<Gr,Bl>>>(scores, scores_dim, objf_terms, objf_dim,
+    objf_derivs, derivs_dim);
 }
 
 // Some conversion kernels for which it's more convenient

@@ -37,8 +37,8 @@ int main(int argc, char *argv[]) {
     BaseFloat factor = 0.0;
     bool binary = true;
     po.Register("factor", &factor, "Factor used to interpolate the parameters"
-                "of the two PLDA objects. Conceptually, this is"
-                "c * plda1 + (1-c) * plda2.");
+                " of the two PLDA objects. Conceptually, this is"
+                " c * plda1 + (1-c) * plda2.");
     po.Register("binary", &binary, "Write output in binary mode");
 
     po.Read(argc, argv);
@@ -55,6 +55,7 @@ int main(int argc, char *argv[]) {
     Plda plda1, plda2;
     ReadKaldiObject(plda1_rxfilename, &plda1);
     ReadKaldiObject(plda2_rxfilename, &plda2);
+
     plda2.Interpolate(factor, plda1);
     WriteKaldiObject(plda2, plda_wxfilename, binary);
 

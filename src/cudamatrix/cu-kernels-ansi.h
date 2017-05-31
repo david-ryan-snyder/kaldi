@@ -421,6 +421,16 @@ void cudaF_equal_element_mask(dim3 Gr, dim3 Bl, const float *mat1,
                               const float *mat2, float *mask,
                               MatrixDim mat1_dim, int mat2_stride,
                               int mask_stride);
+
+void cudaF_compute_xvector_objf(dim3 Gr, dim3 Bl, const float *scores,
+                               MatrixDim scores_dim, float *obfj_terms,
+                               MatrixDim objf_dim, float *objf_derivs,
+                               MatrixDim derivs_dim);
+void cudaD_compute_xvector_objf(dim3 Gr, dim3 Bl, const double *scores,
+                               MatrixDim scores_dim, double *obfj_terms,
+                               MatrixDim objf_dim, double *objf_derivs,
+                               MatrixDim derivs_dim);
+
 void cudaD_find_row_max_id(dim3 Gr, dim3 Bl, const double *mat, double *vec_val,
                            int32_cuda *vec_id, MatrixDim d);
 void cudaF_find_row_max_id(dim3 Gr, dim3 Bl, const float *mat, float *vec_val,

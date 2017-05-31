@@ -35,12 +35,13 @@ static void ComputeNormalizingTransform(const SpMatrix<Real> &covar,
 }
 
 void Plda::Interpolate(double alpha, const Plda &other) {
+  KALDI_ASSERT(other.InputDim() == InputDim());
   KALDI_ASSERT(other.Dim() == Dim());
   KALDI_ASSERT(0.0 <= alpha && alpha <= 1.0);
-  SpMatrix<double> between_var(Dim()),
-                   within_var(Dim()),
-                   other_between_var(Dim()),
-                   other_within_var(Dim());
+  SpMatrix<double> between_var(InputDim()),
+                   within_var(InputDim()),
+                   other_between_var(InputDim()),
+                   other_within_var(InputDim());
   GetCovariances(&within_var, &between_var);
   other.GetCovariances(&other_within_var, &other_between_var);
   within_var.Scale(1.0 - alpha);
@@ -50,6 +51,13 @@ void Plda::Interpolate(double alpha, const Plda &other) {
   mean_.Scale(1.0 - alpha);
   mean_.AddVec(alpha, other.mean_);
   ComputeTransform(within_var, between_var);
+  ComputeDerivedVars();
+}
+
+void Plda::ReduceDim(int32 dim) {
+  KALDI_ASSERT(dim <= InputDim());
+  psi_.Resize(dim, kCopyData);
+  transform_.Resize(dim, InputDim(), kCopyData);
   ComputeDerivedVars();
 }
 
@@ -128,7 +136,7 @@ double Plda::GetNormalizationFactor(
   // "transformed_ivector" should have covariance (\Psi + I/num_examples), i.e.
   // within-class/num_examples plus between-class covariance.  So
   // transformed_ivector_sq . (I/num_examples + \Psi)^{-1} should be equal to
-  //  the dimension.
+  // the dimension.
   double dot_prod = VecVec(inv_covar, transformed_ivector_sq);
   return sqrt(Dim() / dot_prod);
 }
@@ -138,13 +146,13 @@ double Plda::TransformIvector(const PldaConfig &config,
                               const VectorBase<double> &ivector,
                               int32 num_examples,
                               VectorBase<double> *transformed_ivector) const {
-  KALDI_ASSERT(ivector.Dim() == Dim() && transformed_ivector->Dim() == Dim());
+  KALDI_ASSERT(ivector.Dim() == InputDim()
+      && transformed_ivector->Dim() == Dim());
   double normalization_factor;
   transformed_ivector->CopyFromVec(offset_);
   transformed_ivector->AddMatVec(1.0, transform_, kNoTrans, ivector, 1.0);
   if (config.simple_length_norm)
-    normalization_factor = sqrt(transformed_ivector->Dim())
-      / transformed_ivector->Norm(2.0);
+    normalization_factor = sqrt(Dim()) / transformed_ivector->Norm(2.0);
   else
     normalization_factor = GetNormalizationFactor(*transformed_ivector,
                                                   num_examples);
@@ -158,7 +166,7 @@ float Plda::TransformIvector(const PldaConfig &config,
                              const VectorBase<float> &ivector,
                              int32 num_examples,
                              VectorBase<float> *transformed_ivector) const {
-  Vector<double> tmp(ivector), tmp_out(ivector.Dim());
+  Vector<double> tmp(ivector), tmp_out(Dim());
   float ans = TransformIvector(config, tmp, num_examples, &tmp_out);
   transformed_ivector->CopyFromVec(tmp_out);
   return ans;
@@ -237,17 +245,17 @@ void Plda::SmoothWithinClassCovariance(double smoothing_factor) {
 void Plda::ComputeTransform(const SpMatrix<double> &within_var,
   const SpMatrix<double> &between_var) {
 
-  Matrix<double> transform1(Dim(), Dim());
+  Matrix<double> transform1(InputDim(), InputDim());
   ComputeNormalizingTransform(within_var, &transform1);
   // now transform is a matrix that if we project with it,
   // within_var becomes unit.
 
   // between_var_proj is between_var after projecting with transform1.
-  SpMatrix<double> between_var_proj(Dim());
+  SpMatrix<double> between_var_proj(InputDim());
   between_var_proj.AddMat2Sp(1.0, transform1, kNoTrans, between_var, 0.0);
 
-  Matrix<double> U(Dim(), Dim());
-  Vector<double> s(Dim());
+  Matrix<double> U(InputDim(), InputDim());
+  Vector<double> s(InputDim());
   // Do symmetric eigenvalue decomposition between_var_proj = U diag(s) U^T,
   // where U is orthogonal.
   between_var_proj.Eig(&s, &U);
@@ -266,7 +274,7 @@ void Plda::ComputeTransform(const SpMatrix<double> &within_var,
   // makes within_var_ unit and between_var_ diagonal is U^T transform1,
   // i.e. first transform1 and then U^T.
 
-  transform_.Resize(Dim(), Dim());
+  transform_.Resize(InputDim(), InputDim());
   transform_.AddMatMat(1.0, U, kTrans, transform1, kNoTrans, 0.0);
   psi_ = s;
 
@@ -275,13 +283,13 @@ void Plda::ComputeTransform(const SpMatrix<double> &within_var,
   if (GetVerboseLevel() >= 2) { // at higher verbose levels, do a self-test
                                 // (just tests that this function does what it
                                 // should).
-    SpMatrix<double> tmp_within(Dim());
+    SpMatrix<double> tmp_within(InputDim());
     tmp_within.AddMat2Sp(1.0, transform_, kNoTrans, within_var, 0.0);
     KALDI_ASSERT(tmp_within.IsUnit(0.0001));
-    SpMatrix<double> tmp_between(Dim());
+    SpMatrix<double> tmp_between(InputDim());
     tmp_between.AddMat2Sp(1.0, transform_, kNoTrans, between_var, 0.0);
     KALDI_ASSERT(tmp_between.IsDiagonal(0.0001));
-    Vector<double> psi(Dim());
+    Vector<double> psi(InputDim());
     psi.CopyDiagFromSp(tmp_between);
     AssertEqual(psi, psi_);
   }
@@ -289,11 +297,10 @@ void Plda::ComputeTransform(const SpMatrix<double> &within_var,
 
 void Plda::GetCovariances(SpMatrix<double> *within_var,
   SpMatrix<double> *between_var) const {
-
-  between_var->Resize(Dim());
-  within_var->Resize(Dim());
+  KALDI_ASSERT(InputDim() == Dim());
+  between_var->Resize(InputDim());
+  within_var->Resize(InputDim());
   SpMatrix<double> psi_mat(Dim());
-
   Matrix<double> transform_invert(transform_);
   transform_invert.Invert();
 
@@ -547,6 +554,7 @@ void PldaEstimator::EstimateOneIter() {
 void PldaEstimator::Estimate(const PldaEstimationConfig &config,
                              Plda *plda) {
   KALDI_ASSERT(stats_.example_weight_ > 0 && "Cannot estimate with no stats");
+
   for (int32 i = 0; i < config.num_em_iters; i++) {
     KALDI_LOG << "Plda estimation iteration " << i
               << " of " << config.num_em_iters;

@@ -129,7 +129,11 @@ class Plda {
   /// psi_ were as a result very large.
   void SmoothWithinClassCovariance(double smoothing_factor);
 
-  int32 Dim() const { return mean_.Dim(); }
+  int32 InputDim() const { return mean_.Dim(); }
+  int32 Dim() const { return transform_.NumRows(); }
+
+  /// Reduce dimensionality of the iVectors in the PLDA transform space.
+  void ReduceDim(int32 dim);
   void Write(std::ostream &os, bool binary) const;
   void Read(std::istream &is, bool binary);
  protected:
@@ -144,8 +148,9 @@ class Plda {
   friend class PldaEstimator;
   friend class PldaUnsupervisedAdaptor;
 
-  Vector<double> mean_;  // mean of samples in original space.
-  Matrix<double> transform_; // of dimension Dim() by Dim();
+  Vector<double> mean_;  // mean of samples in original space with
+                         // dimension InputDim().
+  Matrix<double> transform_; // of dimension Dim() by InputDim();
                              // this transform makes within-class covar unit
                              // and diagonalizes the between-class covar.
   Vector<double> psi_; // of dimension Dim().  The between-class

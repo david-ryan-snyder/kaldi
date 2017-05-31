@@ -37,9 +37,12 @@ int main(int argc, char *argv[]) {
     ParseOptions po(usage);
 
     BaseFloat smoothing = 0.0;
+    int32 dim = -1;
     bool binary = true;
     po.Register("smoothing", &smoothing, "Factor used in smoothing within-class "
                 "covariance (add this factor times between-class covar)");
+    po.Register("dim", &dim, "Reduce iVectors to this dimension in the PLDA "
+                "space (defaults to the input dimension)");
     po.Register("binary", &binary, "Write output in binary mode");
 
     PldaConfig plda_config;
@@ -59,6 +62,8 @@ int main(int argc, char *argv[]) {
     ReadKaldiObject(plda_rxfilename, &plda);
     if (smoothing != 0.0)
       plda.SmoothWithinClassCovariance(smoothing);
+    if (dim != -1)
+      plda.ReduceDim(dim);
     WriteKaldiObject(plda, plda_wxfilename, binary);
 
     return 0;

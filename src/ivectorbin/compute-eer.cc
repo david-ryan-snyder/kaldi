@@ -51,7 +51,7 @@ BaseFloat ComputeEer(std::vector<BaseFloat> *target_scores,
   KALDI_ASSERT(!target_scores->empty() && !nontarget_scores->empty());
   std::sort(target_scores->begin(), target_scores->end());
   std::sort(nontarget_scores->begin(), nontarget_scores->end());
-  
+
   size_t target_position = 0,
       target_size = target_scores->size();
   for (; target_position + 1 < target_size; target_position++) {
@@ -87,10 +87,10 @@ int main(int argc, char *argv[]) {
         "\n"
         "Usage: compute-eer <scores-in>\n"
         "e.g.: compute-eer -\n";
-    
+
     ParseOptions po(usage);
     po.Read(argc, argv);
-    
+
     if (po.NumArgs() != 1) {
       po.PrintUsage();
       exit(1);
@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
 
     std::vector<BaseFloat> target_scores, nontarget_scores;
     Input ki(scores_rxfilename);
-    
+
     std::string line;
     while (std::getline(ki.Stream(), line)) {
       std::vector<std::string> split_line;
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
 
     std::cout.precision(4);
     std::cout << (100.0 * eer);
-    
+
     return 0;
   } catch(const std::exception &e) {
     std::cerr << e.what();

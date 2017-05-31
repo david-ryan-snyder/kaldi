@@ -10,6 +10,7 @@ ${KALDI_ROOT}/src/fgmmbin:\
 ${KALDI_ROOT}/src/fstbin:\
 ${KALDI_ROOT}/src/gmmbin:\
 ${KALDI_ROOT}/src/ivectorbin:\
+${KALDI_ROOT}/src/xvectorbin:\
 ${KALDI_ROOT}/src/kwsbin:\
 ${KALDI_ROOT}/src/latbin:\
 ${KALDI_ROOT}/src/lmbin:\

@@ -205,6 +205,49 @@ void Copy(const CuMatrixBase<Real> &src, const CuArray<int32> &copy_from_indices
   }
 }
 
+void ComputeXvectorObjfFromScores(const CuMatrixBase<BaseFloat> &scores,
+                                  CuMatrixBase<BaseFloat> *objf_terms,
+                                  CuMatrixBase<BaseFloat> *objf_derivs) {
+  KALDI_ASSERT(SameDim(*objf_terms, *objf_derivs)
+               && SameDim(*objf_terms, scores) &&
+               scores.NumRows() == scores.NumCols());
+  #if HAVE_CUDA == 1
+  if (CuDevice::Instantiate().Enabled()) {
+    Timer tim;
+    dim3 dimBlock(CU2DBLOCK, CU2DBLOCK);
+    dim3 dimGrid(n_blocks(scores.NumCols(), CU2DBLOCK),
+                 n_blocks(scores.NumRows(), CU2DBLOCK));
+
+    cuda_compute_xvector_objf(dimGrid, dimBlock, scores.Data(), scores.Dim(),
+      objf_terms->Data(), objf_terms->Dim(), objf_derivs->Data(),
+      objf_derivs->Dim());
+    CU_SAFE_CALL(cudaGetLastError());
+
+    CuDevice::Instantiate().AccuProfile(__func__, tim.Elapsed());
+  } else
+  #endif
+  {
+    // Compute the xvector objective function and its derivatives in the CPU.
+    int32 num_rows = scores.NumRows();
+    BaseFloat K = 1.0 / (num_rows - 2.0);
+    for (int32 i = 0; i < num_rows; i++) {
+      for (int32 j = 0; j < num_rows; j++) {
+        BaseFloat L = scores(i, j);
+        if (i + 1 == j && i % 2 == 0) {
+          (*objf_terms)(i, j) = L < -15 ? L : -log(1.0 + exp(-L));
+          (*objf_derivs)(i, j) = L > 15 ? 0.0 : 1.0 / (1.0 + exp(L));
+        } else if (i < j) {
+          (*objf_terms)(i, j) = K * (L > 15 ? -L : -log(1.0 + exp(L)));
+          (*objf_derivs)(i, j) = L < -15 ? 0 : -K / (1.0 + exp(-L));
+        } else {
+          (*objf_terms)(i, j) = 0;
+          (*objf_derivs)(i, j) = 0;
+        }
+      }
+    }
+  }
+}
+
 // instantiate the templates.
 template
 void RegularizeL1(CuMatrixBase<float> *weight, CuMatrixBase<float> *grad, float l1, float lr);
