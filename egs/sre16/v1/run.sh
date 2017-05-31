@@ -50,7 +50,7 @@ utils/combine_data.sh data/swbd \
   data/swbd2_phase1_train data/swbd2_phase2_train data/swbd2_phase3_train
 
 
-for name in sre swbd fisher sre16_dev_enroll sre16_dev_test sre16_eval_enroll sre16_eval_test sre16_major sre16_minor; do
+for name in sre swbd sre16_dev_enroll sre16_dev_test sre16_eval_enroll sre16_eval_test sre16_major sre16_minor; do
   steps/make_mfcc.sh --mfcc-config conf/mfcc.conf --nj 40 --cmd "$train_cmd" \
     data/${name} exp/make_mfcc $mfccdir
   utils/fix_data_dir.sh data/${name}
