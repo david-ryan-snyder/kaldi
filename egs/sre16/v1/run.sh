@@ -144,7 +144,7 @@ data=data/sre16_major
 sdata=data/sre16_major/split$nj
 utils/split_data.sh data/sre16_major $nj || exit 1;
 $train_cmd --mem 6G JOB=1:$nj exp/extractor/ivectors_sre16_major/log/scores.JOB.log \
-  ivector-plda-scoring-dense2 --min-score=-50 "ivector-copy-plda --smoothing=0.0 exp/extractor/ivectors_sre/plda - |" \
+  ivector-plda-scoring-dense --min-score=-50 "ivector-copy-plda --smoothing=0.0 exp/extractor/ivectors_sre/plda - |" \
   "ark:utils/filter_scp.pl $sdata/JOB/utt2spk exp/extractor/ivectors_sre16_major/ivector.scp | ivector-subtract-global-mean exp/extractor/ivectors_sre16_major/mean.vec scp:- ark:- | ivector-normalize-length ark:- ark:- |" \
   "ark:utils/filter_scp.pl $data/utt2spk exp/extractor/ivectors_sre16_major/ivector.scp | ivector-subtract-global-mean exp/extractor/ivectors_sre16_major/mean.vec scp:- ark:- | ivector-normalize-length ark:- ark:- |" \
   exp/extractor/ivectors_sre16_major/scores.JOB.txt
@@ -157,7 +157,7 @@ rm exp/extractor/ivectors_sre16_major/scores.*.txt
 # a stopping threshold.  The threshold could be estimated by looking
 # at the distribution of scores or using the SRE16 dev set.
 $train_cmd --mem 6G exp/extractor/ivectors_sre/log/cluster_scores.log \
-  agglomerative-cluster2 --num-speakers=40 exp/extractor/ivectors_sre16_major/scores.txt \
+  agglomerative-cluster --num-speakers=40 exp/extractor/ivectors_sre16_major/scores.txt \
   ark,t:exp/extractor/ivectors_sre16_major/utt2spk || exit 1;
 
 utils/utt2spk_to_spk2utt.pl exp/extractor/ivectors_sre16_major/utt2spk > exp/extractor/ivectors_sre16_major/spk2utt
