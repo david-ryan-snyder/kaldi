@@ -121,6 +121,7 @@ fi
 if [ $stage -le 7 ]; then
   # uncomment the following line to have it remove the egs when you are done.
   # steps/nnet2/remove_egs.sh $xvector_dir/egs
+  exit 0;
 fi
 
 exit 0;
