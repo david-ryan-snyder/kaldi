@@ -229,15 +229,15 @@ python local/combine_scores.py 1.0 exp/scores/sre16_eval_scores_xvector_a_snorm 
 echo "modelid    segment    side    LLR" > exp/scores/converted_sre16_eval_scores_xvector_snorm
 awk '{print $1, $2, "a", $3}' exp/scores/sre16_eval_scores_xvector_snorm >> exp/scores/converted_sre16_eval_scores_xvector_snorm
 
-# EER 10.59, DCF16 0.637
+# EER 10.45, DCF16 0.627
 python3 ${scoring_dir}/scoring.py \
   ${scoring_dir}/eval_config.ini -o exp/scores/converted_sre16_eval_scores_xvector_snorm 2>&1 | tee exp/scores/pool_results_xvector_snorm
 
-# EER 5.92, DCF16 0.486
+# EER 5.80, DCF16 0.485
 python3 ${scoring_dir}/scoring.py \
   ${scoring_dir}/eval_yue_config.ini -o exp/scores/converted_sre16_eval_scores_xvector_snorm 2>&1 | tee exp/scores/yue_results_xvector_snorm
 
-# EER 14.78, DCF16 0.783
+# EER 14.66, DCF16 0.768
 python3 ${scoring_dir}/scoring.py \
   ${scoring_dir}/eval_tgl_config.ini -o exp/scores/converted_sre16_eval_scores_xvector_snorm 2>&1 | tee exp/scores/tgl_results_xvector_snorm
 
@@ -248,15 +248,15 @@ python local/combine_scores.py 1.0 exp/scores/sre16_eval_scores_xvector_snorm ex
 echo "modelid    segment    side    LLR" > exp/scores/converted_sre16_eval_scores_combined_snorm
 awk '{print $1, $2, "a", $3}' exp/scores/sre16_eval_scores_combined_snorm >> exp/scores/converted_sre16_eval_scores_combined_snorm
 
-# EER 9.34, DCF16 0.590
+# EER 9.21, DCF16 0.575
 python3 ${scoring_dir}/scoring.py \
   ${scoring_dir}/eval_config.ini -o exp/scores/converted_sre16_eval_scores_combined_snorm 2>&1 | tee exp/scores/pool_results_combined_snorm
 
-# EER 5.12, DCF16 0.424
+# EER 5.08, DCF16 0.413
 python3 ${scoring_dir}/scoring.py \
   ${scoring_dir}/eval_yue_config.ini -o exp/scores/converted_sre16_eval_scores_combined_snorm 2>&1 | tee exp/scores/yue_results_combined_snorm
 
-# EER 13.16, DCF16 0.750
+# EER 12.92, DCF16 0.732
 python3 ${scoring_dir}/scoring.py \
   ${scoring_dir}/eval_tgl_config.ini -o exp/scores/converted_sre16_eval_scores_combined_snorm 2>&1 | tee exp/scores/tgl_results_combined_snorm
 fi
