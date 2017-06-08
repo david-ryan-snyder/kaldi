@@ -10,7 +10,7 @@ if (@ARGV != 4) {
   exit(1);
 }
 
-($db_base, $sre_name, $sre_ref_filename, $out_dir) = @ARGV;
+($db_base, $sre_year, $sre_ref_filename, $out_dir) = @ARGV;
 %utt2sph = ();
 %spk2gender = ();
 
@@ -39,15 +39,16 @@ open(WAV,">", "$out_dir/wav.scp") or die "Could not open the output file $out_di
 open(SRE_REF, "<", $sre_ref_filename) or die "Cannot open SRE reference.";
 while (<SRE_REF>) {
   chomp;
-  ($speaker, $gender, $other_sre_name, $utt_id, $channel) = split(" ", $_);
+  ($speaker, $gender, $other_sre_year, $utt_id, $channel) = split(" ", $_);
   $channel_num = "1";
   if ($channel eq "A") {
     $channel_num = "1";
   } else {
     $channel_num = "2";
   }
-  if (($other_sre_name eq $sre_name) and (exists $utt2sph{$utt_id})) {
-    $full_utt_id = "$speaker-$sre_name-$utt_id-$channel";
+  $channel = lc $channel;
+  if (($other_sre_year eq "sre20$sre_year") and (exists $utt2sph{$utt_id})) {
+    $full_utt_id = "$speaker-sre$sre_year-$utt_id-$channel";
     $spk2gender{"$speaker"} = $gender;
     print WAV "$full_utt_id"," sph2pipe -f wav -p -c $channel_num $utt2sph{$utt_id} |\n";
     print SPKR "$full_utt_id $speaker","\n";
@@ -61,3 +62,13 @@ close(GNDR) || die;
 close(SPKR) || die;
 close(WAV) || die;
 close(SRE_REF) || die;
+
+if (system(
+  "utils/utt2spk_to_spk2utt.pl $out_dir/utt2spk >$out_dir/spk2utt") != 0) {
+  die "Error creating spk2utt file in directory $out_dir";
+}
+
+system("utils/fix_data_dir.sh $out_dir");
+if (system("utils/validate_data_dir.sh --no-text --no-feats $out_dir") != 0) {
+  die "Error validating directory $out_dir";
+}
