@@ -244,6 +244,7 @@ int main(int argc, char *argv[]) {
         string key2 = iter2->first;
         keys.push_back(key2);
       }
+      std::random_shuffle(keys.begin(), keys.end());
       keys.resize(max_comparisons);
       for (int32 i = 0; i < keys.size(); i++) {
         const Vector<BaseFloat> *train_ivector_snorm = train_ivectors_snorm[keys[i]];
@@ -282,6 +283,7 @@ int main(int argc, char *argv[]) {
         string key2 = iter2->first;
         keys.push_back(key2);
       }
+      std::random_shuffle(keys.begin(), keys.end());
       keys.resize(max_comparisons);
       for (int32 i = 0; i < keys.size(); i++) {
         const Vector<BaseFloat> *test_ivector_snorm = test_ivectors_snorm[keys[i]];
