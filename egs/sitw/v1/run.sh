@@ -258,3 +258,72 @@ eval_assist_dcf=`grep -oP "(?<=minDCF1e-2: )[^ ]+" exp/scores/sitw_eval_assist_r
 avg_dcf=`echo "print ($sre16_dcf + $eval_core_dcf + $eval_assist_dcf)/3.0" | python`
 echo "EVAL AVG"
 echo "minDCF1e-2: $avg_dcf"
+
+### Next we create an adaptation set by combining the SITW dev and SRE16 Major
+utils/combine_data.sh data/adapt data/sitw_dev_test data/sitw_dev_enroll data/sre16_major
+mkdir -p exp/extractor/ivectors_adapt
+cat exp/extractor/ivectors_{sitw_dev_test,sitw_dev_enroll,sre16_major}/ivector.scp > exp/extractor/ivectors_adapt/ivector.scp
+
+### Compute the mean for this adapt set
+$train_cmd exp/extractor/ivectors_adapt/log/compute_mean.log \
+  ivector-mean scp:exp/extractor/ivectors_adapt/ivector.scp \
+  exp/extractor/ivectors_adapt/mean.vec || exit 1;
+
+# Now do PLDA scoring with speaker adaptive score normalization
+#  on the Cantonese portion of SRE16
+$train_cmd exp/scores/log/sre16_eval_yue_scoring_snorm.log \
+  ivector-plda-scoring-snorm --normalize-length=true \
+  --max-comparisons=3000 \
+  --num-utts=ark:exp/extractor/ivectors_sre16_eval_enroll/num_utts.ark \
+  "ivector-copy-plda --smoothing=0.0 exp/extractor/ivectors_sre/plda - |" \
+  "ark:ivector-subtract-global-mean exp/extractor/ivectors_adapt/mean.vec scp:exp/extractor/ivectors_adapt/ivector.scp ark:- | transform-vec exp/extractor/ivectors_sre/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
+  "ark:ivector-subtract-global-mean exp/extractor/ivectors_adapt/mean.vec scp:exp/extractor/ivectors_adapt/ivector.scp ark:- | transform-vec exp/extractor/ivectors_sre/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
+  "ark:ivector-mean ark:data/sre16_eval_enroll/spk2utt scp:exp/extractor/ivectors_sre16_eval_enroll/ivector.scp ark:- | ivector-subtract-global-mean exp/extractor/ivectors_adapt/mean.vec ark:- ark:- | transform-vec exp/extractor/ivectors_sre/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
+  "ark:ivector-subtract-global-mean exp/extractor/ivectors_adapt/mean.vec scp:exp/extractor/ivectors_sre16_eval_test/ivector.scp ark:- | transform-vec exp/extractor/ivectors_sre/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
+  "cat '$sre16_trials_yue' | cut -d\  --fields=1,2 |" exp/scores/sre16_eval_yue_scores_snorm || exit 1;
+
+# SITW eval core-core, with speaker adaptive score normalization
+$train_cmd exp/scores/log/sitw_eval_core_scoring_snorm.log \
+  ivector-plda-scoring-snorm --normalize-length=true \
+  --max-comparisons=3000 \
+  --num-utts=ark:exp/extractor/ivectors_sitw_eval_enroll/num_utts.ark \
+  "ivector-copy-plda --smoothing=0.0 exp/extractor/ivectors_sre/plda - |" \
+  "ark:ivector-subtract-global-mean exp/extractor/ivectors_adapt/mean.vec scp:exp/extractor/ivectors_adapt/ivector.scp ark:- | transform-vec exp/extractor/ivectors_sre/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
+  "ark:ivector-subtract-global-mean exp/extractor/ivectors_adapt/mean.vec scp:exp/extractor/ivectors_adapt/ivector.scp ark:- | transform-vec exp/extractor/ivectors_sre/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
+  "ark:ivector-mean ark:data/sitw_eval_enroll/spk2utt scp:exp/extractor/ivectors_sitw_eval_enroll/ivector.scp ark:- | ivector-subtract-global-mean exp/extractor/ivectors_sre/mean.vec ark:- ark:- | transform-vec exp/extractor/ivectors_sre/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
+  "ark:ivector-subtract-global-mean exp/extractor/ivectors_sre/mean.vec scp:exp/extractor/ivectors_sitw_eval_test/ivector.scp ark:- | transform-vec exp/extractor/ivectors_sre/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
+  "cat '$sitw_eval_trials_core' | cut -d\  --fields=1,2 |" exp/scores/sitw_eval_core_scores_snorm || exit 1;
+
+# SITW eval core-core, with speaker adaptive score normalization
+$train_cmd exp/scores/log/sitw_eval_assist_scoring_snorm.log \
+  ivector-plda-scoring-snorm --normalize-length=true \
+  --max-comparisons=3000 \
+  --num-utts=ark:exp/extractor/ivectors_sitw_eval_enroll/num_utts.ark \
+  "ivector-copy-plda --smoothing=0.0 exp/extractor/ivectors_sre/plda - |" \
+  "ark:ivector-subtract-global-mean exp/extractor/ivectors_adapt/mean.vec scp:exp/extractor/ivectors_adapt/ivector.scp ark:- | transform-vec exp/extractor/ivectors_sre/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
+  "ark:ivector-subtract-global-mean exp/extractor/ivectors_adapt/mean.vec scp:exp/extractor/ivectors_adapt/ivector.scp ark:- | transform-vec exp/extractor/ivectors_sre/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
+  "ark:ivector-mean ark:data/sitw_eval_enroll/spk2utt scp:exp/extractor/ivectors_sitw_eval_enroll/ivector.scp ark:- | ivector-subtract-global-mean exp/extractor/ivectors_sre/mean.vec ark:- ark:- | transform-vec exp/extractor/ivectors_sre/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
+  "ark:ivector-subtract-global-mean exp/extractor/ivectors_sre/mean.vec scp:exp/extractor/ivectors_sitw_eval_test/ivector.scp ark:- | transform-vec exp/extractor/ivectors_sre/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
+  "cat '$sitw_eval_trials_assist' | cut -d\  --fields=1,2 |" exp/scores/sitw_eval_assist_scores_snorm || exit 1;
+
+# EVAL SRE16 (with snorm)
+# EER: 9.28 minDCF1e-3: 0.7303 minDCF1e-2: 0.5678
+# EVAL CORE (with snorm)
+# EER: 9.92 minDCF1e-3: 0.8325 minDCF1e-2: 0.6481
+# EVAL ASSIST (with snorm)
+# EER: 12.28 minDCF1e-3: 0.8179 minDCF1e-2: 0.6411
+echo "EVAL SRE16 (with snorm)"
+python ${scoring_software_dir}/scoring.py $sre16_trials_yue exp/scores/sre16_eval_yue_scores_snorm 2>&1 | tee exp/scores/sre16_eval_yue_results_snorm
+echo "EVAL CORE (with snorm)"
+python ${scoring_software_dir}/scoring.py $sitw_eval_trials_core exp/scores/sitw_eval_core_scores_snorm 2>&1 | tee exp/scores/sitw_eval_core_results_snorm
+echo "EVAL ASSIST (with snorm)"
+python ${scoring_software_dir}/scoring.py $sitw_eval_trials_assist exp/scores/sitw_eval_assist_scores_snorm 2>&1 | tee exp/scores/sitw_eval_assist_results_snorm
+
+# EVAL AVG (with snorm)
+# minDCF1e-2: 0.619
+sre16_dcf=`grep -oP "(?<=minDCF1e-2: )[^ ]+" exp/scores/sre16_eval_yue_results_snorm`
+eval_core_dcf=`grep -oP "(?<=minDCF1e-2: )[^ ]+" exp/scores/sitw_eval_core_results_snorm`
+eval_assist_dcf=`grep -oP "(?<=minDCF1e-2: )[^ ]+" exp/scores/sitw_eval_assist_results_snorm`
+avg_dcf=`echo "print ($sre16_dcf + $eval_core_dcf + $eval_assist_dcf)/3.0" | python`
+echo "EVAL AVG (with snorm)"
+echo "minDCF1e-2: $avg_dcf"
