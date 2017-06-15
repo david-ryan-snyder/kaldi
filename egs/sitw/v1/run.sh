@@ -273,7 +273,7 @@ $train_cmd exp/extractor/ivectors_adapt/log/compute_mean.log \
 #  on the Cantonese portion of SRE16
 $train_cmd exp/scores/log/sre16_eval_yue_scoring_snorm.log \
   ivector-plda-scoring-snorm --normalize-length=true \
-  --max-comparisons=3000 \
+  --max-comparisons=6711 \
   --num-utts=ark:exp/extractor/ivectors_sre16_eval_enroll/num_utts.ark \
   "ivector-copy-plda --smoothing=0.0 exp/extractor/ivectors_sre/plda - |" \
   "ark:ivector-subtract-global-mean exp/extractor/ivectors_adapt/mean.vec scp:exp/extractor/ivectors_adapt/ivector.scp ark:- | transform-vec exp/extractor/ivectors_sre/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
@@ -285,7 +285,7 @@ $train_cmd exp/scores/log/sre16_eval_yue_scoring_snorm.log \
 # SITW eval core-core, with speaker adaptive score normalization
 $train_cmd exp/scores/log/sitw_eval_core_scoring_snorm.log \
   ivector-plda-scoring-snorm --normalize-length=true \
-  --max-comparisons=3000 \
+  --max-comparisons=6711 \
   --num-utts=ark:exp/extractor/ivectors_sitw_eval_enroll/num_utts.ark \
   "ivector-copy-plda --smoothing=0.0 exp/extractor/ivectors_sre/plda - |" \
   "ark:ivector-subtract-global-mean exp/extractor/ivectors_adapt/mean.vec scp:exp/extractor/ivectors_adapt/ivector.scp ark:- | transform-vec exp/extractor/ivectors_sre/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
@@ -297,7 +297,7 @@ $train_cmd exp/scores/log/sitw_eval_core_scoring_snorm.log \
 # SITW eval core-core, with speaker adaptive score normalization
 $train_cmd exp/scores/log/sitw_eval_assist_scoring_snorm.log \
   ivector-plda-scoring-snorm --normalize-length=true \
-  --max-comparisons=3000 \
+  --max-comparisons=6711 \
   --num-utts=ark:exp/extractor/ivectors_sitw_eval_enroll/num_utts.ark \
   "ivector-copy-plda --smoothing=0.0 exp/extractor/ivectors_sre/plda - |" \
   "ark:ivector-subtract-global-mean exp/extractor/ivectors_adapt/mean.vec scp:exp/extractor/ivectors_adapt/ivector.scp ark:- | transform-vec exp/extractor/ivectors_sre/transform.mat ark:- ark:- | ivector-normalize-length ark:- ark:- |" \
@@ -307,11 +307,11 @@ $train_cmd exp/scores/log/sitw_eval_assist_scoring_snorm.log \
   "cat '$sitw_eval_trials_assist' | cut -d\  --fields=1,2 |" exp/scores/sitw_eval_assist_scores_snorm || exit 1;
 
 # EVAL SRE16 (with snorm)
-# EER: 9.27 minDCF1e-3: 0.7409 minDCF1e-2: 0.5702
+# EER: 9.28 minDCF1e-3: 0.7335 minDCF1e-2: 0.5677
 # EVAL CORE (with snorm)
-# EER: 9.19 minDCF1e-3: 0.7908 minDCF1e-2: 0.6251
+# EER: 9.18 minDCF1e-3: 0.7876 minDCF1e-2: 0.6245
 # EVAL ASSIST (with snorm)
-# EER: 11.24 minDCF1e-3: 0.7748 minDCF1e-2: 0.6250
+# EER: 11.26 minDCF1e-3: 0.7667 minDCF1e-2: 0.6239
 echo "EVAL SRE16 (with snorm)"
 python ${scoring_software_dir}/scoring.py $sre16_trials_yue exp/scores/sre16_eval_yue_scores_snorm 2>&1 | tee exp/scores/sre16_eval_yue_results_snorm
 echo "EVAL CORE (with snorm)"
@@ -320,7 +320,7 @@ echo "EVAL ASSIST (with snorm)"
 python ${scoring_software_dir}/scoring.py $sitw_eval_trials_assist exp/scores/sitw_eval_assist_scores_snorm 2>&1 | tee exp/scores/sitw_eval_assist_results_snorm
 
 # EVAL AVG (with snorm)
-# minDCF1e-2: 0.6068
+# minDCF1e-2: 0.6054
 sre16_dcf=`grep -oP "(?<=minDCF1e-2: )[^ ]+" exp/scores/sre16_eval_yue_results_snorm`
 eval_core_dcf=`grep -oP "(?<=minDCF1e-2: )[^ ]+" exp/scores/sitw_eval_core_results_snorm`
 eval_assist_dcf=`grep -oP "(?<=minDCF1e-2: )[^ ]+" exp/scores/sitw_eval_assist_results_snorm`
