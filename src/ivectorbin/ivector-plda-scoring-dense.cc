@@ -152,8 +152,8 @@ int main(int argc, char *argv[]) {
       for (HashType::iterator iter2 = test_ivectors.begin();
            iter2 != test_ivectors.end(); ++iter2) {
         const string key2 = iter2->first;
-        if (!key1.compare(key2))
-          continue;
+        //if (!key1.compare(key2))
+        //  continue;
         const Vector<BaseFloat> *test_ivector = test_ivectors[key2];
         Vector<double> test_ivector_dbl(*test_ivector);
 
