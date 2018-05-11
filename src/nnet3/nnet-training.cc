@@ -118,6 +118,7 @@ void NnetTrainer::TrainInternal(const NnetExample &eg,
   // The following will only do something if we have a LinearComponent
   // or AffineComponent with orthonormal-constraint set to a nonzero value.
   ConstrainOrthonormal(nnet_);
+  ConstrainNormal(nnet_);
 
   // Scale deta_nnet
   if (success)
@@ -172,6 +173,7 @@ void NnetTrainer::TrainInternalBackstitch(const NnetExample &eg,
     // AffineComponent with orthonormal-constraint set to a nonzero value. We
     // choose to do this only on the 1st backstitch step, for efficiency.
     ConstrainOrthonormal(nnet_);
+    ConstrainNormal(nnet_);
   }
 
   if (!is_backstitch_step1) {

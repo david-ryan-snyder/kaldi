@@ -968,6 +968,12 @@ void ConstrainOrthonormalInternal(BaseFloat scale, CuMatrixBase<BaseFloat> *M) {
   M->AddMat(1.0, M_update);
 }
 
+void ConstrainNormalInternal(BaseFloat scale, CuMatrixBase<BaseFloat> *M) {
+  KALDI_ASSERT(scale != 0.0);
+  CuMatrix<BaseFloat> M_copy(*M);
+  cu::NormalizePerRow(M_copy, scale, false, M);
+}
+
 /**
    This function, to be called after processing every minibatch, is responsible
    for enforcing the orthogonality constraint for any components of type
@@ -1011,6 +1017,33 @@ void ConstrainOrthonormal(Nnet *nnet) {
         ConstrainOrthonormalInternal(scale, &params_trans);
         params.CopyFromMat(params_trans, kTrans);
       }
+    }
+  }
+}
+
+void ConstrainNormal(Nnet *nnet) {
+
+  for (int32 c = 0; c < nnet->NumComponents(); c++) {
+    Component *component = nnet->GetComponent(c);
+    LinearComponent *lc = dynamic_cast<LinearComponent*>(component);
+    if (lc != NULL && lc->NormalConstraint() != 0.0) {
+      if (RandInt(0, 3) != 0)
+        continue;  // For efficiency, only do this every 4 minibatches-- it won't
+                   // stray far.
+      BaseFloat scale = lc->NormalConstraint();
+
+      CuMatrixBase<BaseFloat> &params = lc->Params();
+      ConstrainNormalInternal(scale, &params);
+    }
+
+    AffineComponent *ac = dynamic_cast<AffineComponent*>(component);
+    if (ac != NULL && ac->NormalConstraint() != 0.0) {
+      if (RandInt(0, 3) != 0)
+        continue;  // For efficiency, only do this every 4 minibatches-- it won't
+                   // stray far.
+      BaseFloat scale = ac->NormalConstraint();
+      CuMatrixBase<BaseFloat> &params = ac->LinearParams();
+      ConstrainNormalInternal(scale, &params);
     }
   }
 }

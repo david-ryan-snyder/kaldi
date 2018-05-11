@@ -1036,14 +1036,16 @@ AffineComponent::AffineComponent(const AffineComponent &component):
     UpdatableComponent(component),
     linear_params_(component.linear_params_),
     bias_params_(component.bias_params_),
-    orthonormal_constraint_(component.orthonormal_constraint_) { }
+    orthonormal_constraint_(component.orthonormal_constraint_),
+    normal_constraint_(component.normal_constraint_) { }
 
 AffineComponent::AffineComponent(const CuMatrixBase<BaseFloat> &linear_params,
                                  const CuVectorBase<BaseFloat> &bias_params,
                                  BaseFloat learning_rate):
     linear_params_(linear_params),
     bias_params_(bias_params),
-    orthonormal_constraint_(0.0) {
+    orthonormal_constraint_(0.0),
+    normal_constraint_(0.0) {
   SetUnderlyingLearningRate(learning_rate);
   KALDI_ASSERT(linear_params.NumRows() == bias_params.Dim()&&
                bias_params.Dim() != 0);
@@ -1071,6 +1073,8 @@ std::string AffineComponent::Info() const {
   stream << UpdatableComponent::Info();
   if (orthonormal_constraint_ != 0.0)
     stream << ", orthonormal-constraint=" << orthonormal_constraint_;
+  if (normal_constraint_ != 0.0)
+    stream << ", normal-constraint=" << normal_constraint_;
   PrintParameterStats(stream, "linear-params", linear_params_,
                       false, // include_mean
                       true, // include_row_norms
@@ -1138,6 +1142,7 @@ void AffineComponent::InitFromConfig(ConfigLine *cfl) {
          param_stddev, bias_stddev);
   }
   cfl->GetValue("orthonormal-constraint", &orthonormal_constraint_);
+  cfl->GetValue("normal-constraint", &normal_constraint_);
 
   if (cfl->HasUnusedValues())
     KALDI_ERR << "Could not process these elements in initializer: "
@@ -1213,6 +1218,12 @@ void AffineComponent::Read(std::istream &is, bool binary) {
   } else {
     orthonormal_constraint_ = 0.0;
   }
+  if (PeekToken(is, binary) == 'N') {
+    ExpectToken(is, binary, "<NormalConstraint>");
+    ReadBasicType(is, binary, &normal_constraint_);
+  } else {
+    normal_constraint_ = 0.0;
+  }
   ExpectToken(is, binary, "</AffineComponent>");
 }
 
@@ -1225,6 +1236,10 @@ void AffineComponent::Write(std::ostream &os, bool binary) const {
   if (orthonormal_constraint_ != 0.0) {
     WriteToken(os, binary, "<OrthonormalConstraint>");
     WriteBasicType(os, binary, orthonormal_constraint_);
+  }
+  if (normal_constraint_ != 0.0) {
+    WriteToken(os, binary, "<NrmalConstraint>");
+    WriteBasicType(os, binary, normal_constraint_);
   }
   WriteToken(os, binary, "</AffineComponent>");
 }
@@ -2690,6 +2705,12 @@ void NaturalGradientAffineComponent::Read(std::istream &is, bool binary) {
   } else {
     orthonormal_constraint_ = 0.0;
   }
+  if (PeekToken(is, binary) == 'N') {
+    ExpectToken(is, binary, "<NormalConstraint>");
+    ReadBasicType(is, binary, &normal_constraint_);
+  } else {
+    normal_constraint_ = 0.0;
+  }
   ExpectToken(is, binary, "<UpdatePeriod>");
   ReadBasicType(is, binary, &update_period);
   ExpectToken(is, binary, "<NumSamplesHistory>");
@@ -2800,6 +2821,9 @@ void NaturalGradientAffineComponent::InitFromConfig(ConfigLine *cfl) {
   orthonormal_constraint_ = 0.0;
   cfl->GetValue("orthonormal-constraint", &orthonormal_constraint_);
 
+  normal_constraint_ = 0.0;
+  cfl->GetValue("normal-constraint", &normal_constraint_);
+
   // Set natural-gradient configs.
   BaseFloat num_samples_history = 2000.0,
       alpha = 4.0;
@@ -2841,6 +2865,10 @@ void NaturalGradientAffineComponent::Write(std::ostream &os,
   if (orthonormal_constraint_ != 0.0) {
     WriteToken(os, binary, "<OrthonormalConstraint>");
     WriteBasicType(os, binary, orthonormal_constraint_);
+  }
+  if (normal_constraint_ != 0.0) {
+    WriteToken(os, binary, "<NormalConstraint>");
+    WriteBasicType(os, binary, normal_constraint_);
   }
   WriteToken(os, binary, "<UpdatePeriod>");
   WriteBasicType(os, binary, preconditioner_in_.GetUpdatePeriod());
@@ -2954,6 +2982,12 @@ void LinearComponent::Read(std::istream &is, bool binary) {
   } else {
     orthonormal_constraint_ = 0.0;
   }
+  if (PeekToken(is, binary) == 'N') {
+    ExpectToken(is, binary, "<NormalConstraint>");
+    ReadBasicType(is, binary, &normal_constraint_);
+  } else {
+    normal_constraint_ = 0.0;
+  }
   ExpectToken(is, binary, "<UseNaturalGradient>");
   ReadBasicType(is, binary, &use_natural_gradient_);
 
@@ -3037,6 +3071,9 @@ void LinearComponent::InitFromConfig(ConfigLine *cfl) {
   orthonormal_constraint_ = 0.0;
   cfl->GetValue("orthonormal-constraint", &orthonormal_constraint_);
 
+  normal_constraint_ = 0.0;
+  cfl->GetValue("normal-constraint", &normal_constraint_);
+
   if (cfl->HasUnusedValues())
     KALDI_ERR << "Could not process these elements in initializer: "
               << cfl->UnusedValues();
@@ -3051,6 +3088,10 @@ void LinearComponent::Write(std::ostream &os,
   if (orthonormal_constraint_ != 0.0) {
     WriteToken(os, binary, "<OrthonormalConstraint>");
     WriteBasicType(os, binary, orthonormal_constraint_);
+  }
+  if (normal_constraint_ != 0.0) {
+    WriteToken(os, binary, "<NormalConstraint>");
+    WriteBasicType(os, binary, normal_constraint_);
   }
   WriteToken(os, binary, "<UseNaturalGradient>");
   WriteBasicType(os, binary, use_natural_gradient_);
@@ -3082,6 +3123,8 @@ std::string LinearComponent::Info() const {
                       GetVerboseLevel() >= 2); // include_singular_values
   if (orthonormal_constraint_ != 0.0)
     stream << ", orthonormal-constraint=" << orthonormal_constraint_;
+  if (normal_constraint_ != 0.0)
+    stream << ", normal-constraint=" << normal_constraint_;
   stream << ", use-natural-gradient="
          << (use_natural_gradient_ ? "true" : "false")
          << ", rank-in=" << preconditioner_in_.GetRank()
@@ -3148,6 +3191,7 @@ LinearComponent::LinearComponent(
     UpdatableComponent(other),
     params_(other.params_),
     orthonormal_constraint_(other.orthonormal_constraint_),
+    normal_constraint_(other.normal_constraint_),
     use_natural_gradient_(other.use_natural_gradient_),
     preconditioner_in_(other.preconditioner_in_),
     preconditioner_out_(other.preconditioner_out_) { }
@@ -3155,6 +3199,7 @@ LinearComponent::LinearComponent(
 LinearComponent::LinearComponent(const CuMatrix<BaseFloat> &params):
     params_(params),
     orthonormal_constraint_(0.0),
+    normal_constraint_(0.0),
     use_natural_gradient_(true) {
   // Set defaults for natural gradient.
   preconditioner_in_.SetRank(40);

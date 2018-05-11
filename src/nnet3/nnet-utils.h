@@ -473,6 +473,7 @@ void ScaleBatchnormStats(BaseFloat batchnorm_stats_scale,
    value).  Over multiple iterations this rapidly makes it almost exactly orthonormal.
  */
 void ConstrainOrthonormal(Nnet *nnet);
+void ConstrainNormal(Nnet *nnet);
 
 /** This utility function can be used to obtain the number of distinct 'n'
     values in a training example.  This is the number of examples

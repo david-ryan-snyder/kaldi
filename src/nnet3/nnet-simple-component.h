@@ -391,10 +391,12 @@ class AffineComponent: public UpdatableComponent {
   virtual int32 OutputDim() const { return linear_params_.NumRows(); }
 
   BaseFloat OrthonormalConstraint() const { return orthonormal_constraint_; }
+  BaseFloat NormalConstraint() const { return normal_constraint_; }
   virtual std::string Info() const;
   virtual void InitFromConfig(ConfigLine *cfl);
 
-  AffineComponent(): orthonormal_constraint_(0.0) { } // use Init to really initialize.
+  AffineComponent(): orthonormal_constraint_(0.0),
+                     normal_constraint_(0.0) { } // use Init to really initialize.
   virtual std::string Type() const { return "AffineComponent"; }
   virtual int32 Properties() const {
     return kSimpleComponent|kUpdatableComponent|
@@ -469,6 +471,7 @@ class AffineComponent: public UpdatableComponent {
   CuMatrix<BaseFloat> linear_params_;
   CuVector<BaseFloat> bias_params_;
   BaseFloat orthonormal_constraint_;
+  BaseFloat normal_constraint_;
 };
 
 class RepeatedAffineComponent;
@@ -939,6 +942,7 @@ class LinearComponent: public UpdatableComponent {
   explicit LinearComponent(const CuMatrix<BaseFloat> &params);
 
   BaseFloat OrthonormalConstraint() const { return orthonormal_constraint_; }
+  BaseFloat NormalConstraint() const { return normal_constraint_; }
   CuMatrixBase<BaseFloat> &Params() { return params_; }
   const CuMatrixBase<BaseFloat> &Params() const { return params_; }
  private:
@@ -950,6 +954,7 @@ class LinearComponent: public UpdatableComponent {
   CuMatrix<BaseFloat> params_;
 
   BaseFloat orthonormal_constraint_;
+  BaseFloat normal_constraint_;
   // If true (and if no this->is_gradient_), use natural gradient updates.
   bool use_natural_gradient_;
   OnlineNaturalGradient preconditioner_in_;
