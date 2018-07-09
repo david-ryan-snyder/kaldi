@@ -25,6 +25,8 @@
 #include "nnet3/nnet-simple-component.h"
 #include "nnet3/nnet-normalize-component.h"
 #include "nnet3/nnet-general-component.h"
+#include "nnet3/nnet-weighted-stats.h"
+#include "nnet3/nnet-power-component.h"
 #include "nnet3/nnet-convolutional-component.h"
 #include "nnet3/nnet-attention-component.h"
 #include "nnet3/nnet-parse.h"
@@ -60,6 +62,10 @@ ComponentPrecomputedIndexes* ComponentPrecomputedIndexes::NewComponentPrecompute
     ans = new StatisticsExtractionComponentPrecomputedIndexes();
   } else if (cpi_type == "StatisticsPoolingComponentPrecomputedIndexes") {
     ans = new StatisticsPoolingComponentPrecomputedIndexes();
+  } else if (cpi_type == "WeightedStatisticsExtractionComponentPrecomputedIndexes") {
+    ans = new WeightedStatisticsExtractionComponentPrecomputedIndexes();
+  } else if (cpi_type == "WeightedStatisticsPoolingComponentPrecomputedIndexes") {
+    ans = new WeightedStatisticsPoolingComponentPrecomputedIndexes();
   } else if (cpi_type == "BackpropTruncationComponentPrecomputedIndexes") {
     ans = new BackpropTruncationComponentPrecomputedIndexes();
   } else if (cpi_type == "TimeHeightConvolutionComponentPrecomputedIndexes") {
@@ -156,6 +162,10 @@ Component* Component::NewComponentOfType(const std::string &component_type) {
     ans = new StatisticsExtractionComponent();
   } else if (component_type == "StatisticsPoolingComponent") {
     ans = new StatisticsPoolingComponent();
+  } else if (component_type == "WeightedStatisticsExtractionComponent") {
+    ans = new WeightedStatisticsExtractionComponent();
+  } else if (component_type == "WeightedStatisticsPoolingComponent") {
+    ans = new WeightedStatisticsPoolingComponent();
   } else if (component_type == "ConstantFunctionComponent") {
     ans = new ConstantFunctionComponent();
   } else if (component_type == "ConstantComponent") {
@@ -180,6 +190,8 @@ Component* Component::NewComponentOfType(const std::string &component_type) {
     ans = new SumBlockComponent();
   } else if (component_type == "ScaleAndOffsetComponent") {
     ans = new ScaleAndOffsetComponent();
+  } else if (component_type == "PowerComponent") {
+    ans = new PowerComponent();
   }
   if (ans != NULL) {
     KALDI_ASSERT(component_type == ans->Type());

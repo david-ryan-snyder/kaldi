@@ -16,6 +16,9 @@ TESTFILES = natural-gradient-online-test nnet-graph-test \
 
 OBJFILES = nnet-common.o nnet-compile.o nnet-component-itf.o \
   nnet-simple-component.o nnet-normalize-component.o \
+  nnet-power-component.o \
+  nnet-weighted-stats.o \
+  nnet-tdnn-component.o \
   nnet-general-component.o nnet-parse.o natural-gradient-online.o \
   nnet-descriptor.o nnet-optimize.o nnet-computation.o \
   nnet-computation-graph.o nnet-graph.o am-nnet-simple.o \
@@ -31,7 +34,7 @@ OBJFILES = nnet-common.o nnet-compile.o nnet-component-itf.o \
   nnet-compile-looped.o decodable-simple-looped.o \
   decodable-online-looped.o convolution.o \
   nnet-convolutional-component.o attention.o \
-  nnet-attention-component.o nnet-tdnn-component.o
+  nnet-attention-component.o
 
 
 LIBNAME = kaldi-nnet3
