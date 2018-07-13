@@ -499,6 +499,8 @@ void ConstrainOrthonormal(Nnet *nnet);
 int32 GetNumNvalues(const std::vector<NnetIo> &io_vec,
                     bool exhaustive);
 
+void AddSuffixToNodes(const std::string &suffix, Nnet *nnet);
+
 
 } // namespace nnet3
 } // namespace kaldi

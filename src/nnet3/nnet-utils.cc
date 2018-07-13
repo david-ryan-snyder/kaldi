@@ -2151,6 +2151,21 @@ void ApplyL2Regularization(const Nnet &nnet,
   }
 }
 
+void AddSuffixToNodes(const std::string &suffix, Nnet *nnet) {
+  for (int32 i = 0; i < nnet->NumNodes(); i++) {
+    std::string node_name = nnet->GetNodeName(i);
+    if (node_name != "input" && node_name != "output") {
+      node_name.append(suffix);
+      nnet->SetNodeName(i, node_name);
+    }
+  }
+  for (int32 i = 0; i < nnet->NumComponents(); i++) {
+    std::string component_name = nnet->GetComponentName(i);
+    component_name.append(suffix);
+    nnet->SetComponentName(i, component_name);
+  }
+}
+
 
 } // namespace nnet3
 } // namespace kaldi

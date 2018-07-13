@@ -137,6 +137,9 @@ class Nnet {
   /// the pointer 'component'.
   void SetComponent(int32 c, Component *component);
 
+  /// This is used to modify individual component names.
+  void SetComponentName(int32 component_index, const std::string &new_name);
+
   /// Adds a new component with the given name, which should not be the same as
   /// any existing component name.  Returns the new component index.  Takes
   /// ownership of the pointer 'component'.
@@ -185,7 +188,7 @@ class Nnet {
   /// returns individual node name.
   const std::string &GetNodeName(int32 node_index) const;
 
-  /// This can be used to modify invidual node names.  Note, this does not
+  /// This can be used to modify individual node names.  Note, this does not
   /// affect the neural net structure at all, it just assigns a new
   /// name to an existing node while leaving all connections identical.
   void SetNodeName(int32 node_index, const std::string &new_name);
@@ -274,16 +277,16 @@ class Nnet {
   void GetConfigLines(bool include_dim,
                       std::vector<std::string> *config_lines) const;
 
- private:
-
-  void Destroy();
-
   // This function returns as a string the contents of a line of a config-file
   // corresponding to the node indexed "node_index", which must not be of type
   // kComponentInput.  If include_dim=false, it appears in the same format as it
   // would appear in a line of a config-file; if include_dim=true, we also
   // include dimension information that would not be provided in a config file.
   std::string GetAsConfigLine(int32 node_index, bool include_dim) const;
+
+ private:
+
+  void Destroy();
 
 
   // This function is used when reading config files; it exists in order to

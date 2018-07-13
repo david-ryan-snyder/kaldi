@@ -60,6 +60,16 @@ void Nnet::SetNodeName(int32 node_index, const std::string &new_name) {
   node_names_[node_index] = new_name;
 }
 
+void Nnet::SetComponentName(int32 component_index, const std::string &new_name) {
+  if (!(static_cast<size_t>(component_index) < components_.size()))
+    KALDI_ERR << "Invalid node index";
+  if (GetComponentIndex(new_name) != -1)
+    KALDI_ERR << "You cannot rename a node to create a duplicate node name";
+  if (!IsValidName(new_name))
+    KALDI_ERR << "Node name " << new_name << " is not allowed.";
+  component_names_[component_index] = new_name;
+}
+
 const std::vector<std::string> &Nnet::GetNodeNames() const {
   return node_names_;
 }
