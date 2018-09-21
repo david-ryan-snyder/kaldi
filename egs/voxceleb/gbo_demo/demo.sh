@@ -2,7 +2,7 @@
 . ./cmd.sh
 . ./path.sh
 train_cmd=run.pl
-stage=15
+stage=31
 if [ $stage -le 0 ]; then
 ./create_test_embedding.sh https://www.youtube.com/watch?v=0thYSeNRqi0
 fi
@@ -82,7 +82,6 @@ if [ $stage -le 19 ]; then
   ./voice_search.sh > Sanjeev_Khudanpur_voice_search1
 fi
 
-exit 1;
 if [ $stage -le 20 ]; then
   ./create_enroll_embedding.sh https://www.youtube.com/watch?v=9YjnVK58RxM Jason_Eisner
   ./make_enrollments.sh
@@ -117,4 +116,24 @@ fi
 if [ $stage -le 28 ]; then
   echo "Performing a voice search";
   ./voice_search.sh > Jason_Eisner_voice_search3
+fi
+if [ $stage -le 29 ]; then
+time ./create_embedding.sh https://www.youtube.com/watch?v=e_Rm3TALMsQ
+fi
+if [ $stage -le 30 ]; then
+  echo "Testing Joss_Whedon";
+ ./verify.sh Joss_Whedon
+fi
+if [ $stage -le 31 ]; then
+ ./enroll.sh Jason_Eisner
+ ./make_enrollments.sh
+fi
+if [ $stage -le 32 ]; then
+  ./create_embedding.sh https://www.youtube.com/watch?v=9YjnVK58RxM
+fi
+if [ $stage -le 33 ]; then
+  echo "Testing Jason_Eisner";
+ ./verify.sh Jason_Eisner
+  echo "Testing Joss_Whedon";
+ ./verify.sh Joss_Whedon
 fi
