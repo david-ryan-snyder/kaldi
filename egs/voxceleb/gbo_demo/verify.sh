@@ -3,7 +3,8 @@
 . ./path.sh
 train_cmd=run.pl
 nnet_dir=exp/xvector_dgr5
-t=-10.2747
+#t=-10.2747
+t=30
 enroll=$1
 echo "$enroll foo" > trial
 $train_cmd $nnet_dir/scores/log/test.log \
