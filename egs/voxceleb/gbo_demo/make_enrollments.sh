@@ -40,4 +40,5 @@ if [ $stage -le 1 ]; then
 ivector-mean ark:$nnet_dir/xvectors_enrollments/spk2utt scp:$nnet_dir/xvectors_enrollments/xvector.scp \
   ark,scp:$PWD/$nnet_dir/xvectors_enrollments/spk_xvector.ark,$PWD/$nnet_dir/xvectors_enrollments/spk_xvector.scp ark,t:$PWD/$nnet_dir/xvectors_enrollments/spk_num_utts.ark 2> log
 fi
+echo "DONE";
 

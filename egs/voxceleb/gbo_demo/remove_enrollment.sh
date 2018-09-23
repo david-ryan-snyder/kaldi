@@ -25,4 +25,10 @@ nnet_dir=exp/xvector_dgr5
 train_cmd=run.pl
 stage=0
 spkr=$1
-rm -rf data/enrollments/${spkr}_*
+if [ -z "$spkr" ]; then
+  echo "No name given";
+else
+  rm -rf data/enrollments/${spkr}_*
+  rm -rf exp/xvector_dgr5/xvectors_enrollments/${spkr}_*
+  ./make_enrollments.sh
+fi
